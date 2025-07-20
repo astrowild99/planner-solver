@@ -1,0 +1,6 @@
+.venv
+.env
+
+*.snap
+
+venv

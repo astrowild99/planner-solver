@@ -1,0 +1,12 @@
+services:
+  planner-solver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+      network: host
+    develop:
+      watch:
+        - path: src
+          action: rebuild
+    restart: unless-stopped

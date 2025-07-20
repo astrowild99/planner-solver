@@ -1,0 +1,4 @@
+type: discrete
+delta_time: 5 # seconds
+epoch: '2025-01-01 00:00:00'
+rounding_strategy: ceil
