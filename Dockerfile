@@ -9,11 +9,15 @@ WORKDIR /usr/src/app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY --chmod=755 docker/entrypoint-dev.sh "entrypoint.sh"
+ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
+RUN mkdir /etc/secrets
+
 COPY pyproject.toml pyproject.toml
 
 COPY src src
-COPY configs configs
+COPY configs base_configs
 
-RUN pip install .
+RUN pip install -e .
 
 CMD "planner-solver"

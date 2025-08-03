@@ -1,10 +1,12 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, Type
 from math import ceil, floor
 from datetime import datetime
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import SettingsConfigDict, YamlConfigSettingsSource
+from pydantic_settings_yaml import YamlBaseSettings
 
-class TimeConfig(BaseSettings):
+
+class TimeConfig(YamlBaseSettings):
     """
     These are the config that will be present in either a .env or a .yaml config provided to the system
 

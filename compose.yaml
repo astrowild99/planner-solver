@@ -8,5 +8,19 @@ services:
     develop:
       watch:
         - path: src
-          action: rebuild
+          action: sync+restart
+          target: /usr/src/app/src
+          ignore:
+            - "**/__pycache__"
+            - "**/*.pyc"
+    volumes:
+      - ./configs:/usr/src/app/configs
     restart: unless-stopped
+
+volumes:
+  planner-solver-config:
+  planner-solver-data:
+
+networks:
+  planner-solver:
+    driver: bridge
