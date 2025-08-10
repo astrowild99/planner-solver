@@ -18,7 +18,7 @@ services:
       - ./modules:/usr/src/app/modules
     networks:
       - planner-solver
-    restart: unless-stopped
+    restart: no # change in production
     depends_on:
       mongo-db:
         condition: service_healthy

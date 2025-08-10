@@ -53,7 +53,7 @@ class ModuleLoaderService:
         Args:
             module_path (str): The directory path containing Python modules
         """
-        print(f"Loading modules from: {module_path}")
+        logger.info(f"Loading modules from: {module_path}")
 
         # Add the path to sys.path if not already present
         if module_path not in sys.path:
@@ -84,13 +84,13 @@ class ModuleLoaderService:
 
             # Skip if already loaded
             if module_name in self.loaded_modules:
-                print(f"Module {module_name} already loaded, skipping...")
+                logger.info(f"Module {module_name} already loaded, skipping...")
                 return
 
             # Create module spec and load the module
             spec = importlib.util.spec_from_file_location(module_name, module_file_path)
             if spec is None:
-                print(f"Could not create spec for module: {module_file_path}")
+                logger.error(f"Could not create spec for module: {module_file_path}")
                 return
 
             module = importlib.util.module_from_spec(spec)
@@ -101,18 +101,18 @@ class ModuleLoaderService:
             # Store the loaded module
             self.loaded_modules[module_name] = module
 
-            print(f"Successfully loaded module: {module_name}")
+            logger.info(f"Successfully loaded module: {module_name}")
 
             # Call module initialization if it has an init function
             if hasattr(module, 'initialize'):
                 try:
                     module.initialize()
-                    print(f"Initialized module: {module_name}")
+                    logger.info(f"Initialized module: {module_name}")
                 except Exception as e:
-                    print(f"Error initializing module {module_name}: {e}")
+                    logger.error(f"Error initializing module {module_name}: {e}")
 
         except Exception as e:
-            print(f"Error loading module {module_file_path}: {e}")
+            logger.error(f"Error loading module {module_file_path}: {e}")
 
     def get_loaded_module(self, module_name: str):
         """
@@ -145,11 +145,11 @@ class ModuleLoaderService:
         if module_name in self.loaded_modules:
             try:
                 importlib.reload(self.loaded_modules[module_name])
-                print(f"Reloaded module: {module_name}")
+                logger.info(f"Reloaded module: {module_name}")
             except Exception as e:
-                print(f"Error reloading module {module_name}: {e}")
+                logger.error(f"Error reloading module {module_name}: {e}")
         else:
-            print(f"Module {module_name} not found in loaded modules")
+            logger.error(f"Module {module_name} not found in loaded modules")
 
     def unload_module(self, module_name: str):
         """

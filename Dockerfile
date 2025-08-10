@@ -1,6 +1,6 @@
-FROM python:3.11-alpine AS python_upstream
+FROM python:3.12.3-slim AS python_upstream
 
-RUN apk add bash
+# RUN apk add bash
 
 FROM python_upstream AS dev
 
