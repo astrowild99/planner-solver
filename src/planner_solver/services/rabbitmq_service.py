@@ -11,6 +11,7 @@ class RabbitmqService:
 
     def __init__(self, config: RabbitmqConfig):
         self.__config = config
-        logger.info("[rabbitmq] - service loaded")
+        logger.info("service loaded")
+        logger.debug("host: " + str(config.connection.host) + ":" + str(config.connection.port))
 
     # todo implement this service

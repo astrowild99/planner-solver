@@ -10,6 +10,7 @@ class MongodbService:
     """
     def __init__(self, config: MongodbConfig):
         self.__config = config
-        logger.info("[mongodb] - service loaded")
+        logger.info("service loaded")
+        logger.debug("host: " + str(config.connection.host) + ":" + str(config.connection.port))
 
     # todo implement this service

@@ -1,6 +1,9 @@
+import logging
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
 from planner_solver.config.models import TimeConfig
+
+logger = logging.getLogger(__name__)
 
 class InternalTime(ABC):
     """
@@ -78,7 +81,7 @@ class TimeService:
     """
     def __init__(self, config: TimeConfig):
         self.__config = config
-        pass
+        logger.info("service loaded")
 
     def convert(self, date: datetime) -> InternalTime:
         if self.__config.type == 'discrete':

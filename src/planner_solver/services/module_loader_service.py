@@ -18,7 +18,6 @@ class ModuleLoaderService:
         self.loaded_modules: Dict[str, Any] = {}
         logger.info("[Module Loader] - service loaded")
 
-
     def load_all(self):
         """
         Load all Python modules from the configured module paths.
