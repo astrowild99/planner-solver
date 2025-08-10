@@ -25,3 +25,4 @@ where = ["src"]
 
 [project.scripts]
 planner-solver="planner_solver.main:run"
+planner-solver-runner="planner_solver.main:runner_run"

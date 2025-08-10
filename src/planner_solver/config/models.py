@@ -1,10 +1,36 @@
-from typing import Literal, Optional, Type
+import logging
+from typing import Literal, Optional, Type, List
 from math import ceil, floor
 from datetime import datetime
-from pydantic import Field
+from pydantic import Field, BaseModel
 from pydantic_settings import SettingsConfigDict, YamlConfigSettingsSource
 from pydantic_settings_yaml import YamlBaseSettings
 
+class LoggingConfig(YamlBaseSettings):
+    """
+    To set the logging behavior
+    """
+
+    model_config = SettingsConfigDict(
+        yaml_file="configs/logging.yaml",
+        env_prefix="LOGGING_",
+        case_sensitive=False
+    )
+
+    level: str
+
+    def get_logger_level(self) -> int:
+        if self.level == "DEBUG":
+            return logging.DEBUG
+        if self.level == "INFO":
+            return logging.INFO
+        if self.level == "WARNING":
+            return logging.WARNING
+        if self.level == "ERROR":
+            return logging.ERROR
+        if self.level == "CRITICAL":
+            return logging.CRITICAL
+        return logging.NOTSET
 
 class TimeConfig(YamlBaseSettings):
     """
@@ -40,3 +66,53 @@ class TimeConfig(YamlBaseSettings):
             return floor(val)
     
     # endregion discrete
+
+class ModuleConfig(YamlBaseSettings):
+    """
+    module loader service config
+    """
+    model_config = SettingsConfigDict(
+        yaml_file="configs/modules.yaml",
+        env_prefix="MODULE_",
+        case_sensitive=False
+    )
+
+    # module path will be considered from the current working directly if not absolute
+    module_paths: List[str] = [] # by default, the base modules will always be loaded.
+
+class RabbitmqConnectionConfig(BaseModel):
+    host: str
+    port: str | int
+    username: str
+    password: str
+
+class RabbitmqConfig(YamlBaseSettings):
+    """
+    rabbitmq service config
+    """
+    model_config = SettingsConfigDict(
+        yaml_file="configs/rabbitmq.yaml",
+        env_prefix="RABBITMQ_",
+        case_sensitive=False
+    )
+
+    connection: RabbitmqConnectionConfig
+
+class MongodbConnectionConfig(BaseModel):
+    host: str
+    port: str | int
+    username: str
+    password: str
+    database: str
+
+class MongodbConfig(YamlBaseSettings):
+    """
+    mongodb service config
+    """
+    model_config = SettingsConfigDict(
+        yaml_file="configs/mongodb.yaml",
+        env_prefix="MONGODB_",
+        case_sensitive=False
+    )
+
+    connection: MongodbConnectionConfig

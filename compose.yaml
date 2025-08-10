@@ -1,5 +1,5 @@
 services:
-  planner-solver:
+  planner-solver: &planner-solver
     build:
       context: .
       dockerfile: Dockerfile
@@ -15,11 +15,60 @@ services:
             - "**/*.pyc"
     volumes:
       - ./configs:/usr/src/app/configs
+      - ./modules:/usr/src/app/modules
+    networks:
+      - planner-solver
     restart: unless-stopped
+    depends_on:
+      mongo-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  planner-solver-runner:
+    <<: *planner-solver
+    command:
+      - planner-solver-runner
+    scale: ${NUM_WORKERS:-2}
+
+  mongo-db:
+    image: mongo:noble
+    restart: unless-stopped
+    command: mongod --quiet --logpath /dev/null
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: planner_solver
+      MONGO_INITDB_DATABASE: planner_solver
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      start_period: 10s
+    volumes:
+      - mongo-db-data:/data/db
+    ports: # disable in prod
+      - "27017:27017"
+    networks:
+      - planner-solver
+
+  rabbitmq:
+    image: rabbitmq:management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: root
+      RABBITMQ_DEFAULT_PASS: planner_solver
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
+      start_period: 10s
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    ports: # disable in prod
+      - "15672:15672"
+    networks:
+      - planner-solver
 
 volumes:
-  planner-solver-config:
-  planner-solver-data:
+  mongo-db-data:
+  rabbitmq-data:
+
 
 networks:
   planner-solver:

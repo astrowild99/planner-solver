@@ -1,0 +1,5 @@
+connection:
+  host: rabbitmq
+  port: 5672
+  username: root
+  password: planner_solver
