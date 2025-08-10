@@ -2,7 +2,7 @@ from typing import Type
 
 from planner_solver.main import types_service
 
-class Task:
+class TaskType:
     """
     decorate a class with this to let it behave as task and directly
     init the retrieved data with this resource definition as the defined task

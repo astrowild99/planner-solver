@@ -1,6 +1,6 @@
-from planner_solver.models.decorators.task import Task, TaskParameter
+from planner_solver.models.decorators.task_type import TaskType, TaskParameter
 
 
-@Task(type_name="fixed_duration_task")
+@TaskType(type_name="fixed_duration_task")
 class FixedDurationTask:
     duration = TaskParameter()

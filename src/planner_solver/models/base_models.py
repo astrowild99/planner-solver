@@ -1,88 +1,77 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import Optional, Any, Dict
+from typing import List
 
-import pymongo
-from beanie import Document
-from uuid import UUID, uuid4
 
-from ortools.sat.python.cp_model import IntVar, IntervalVar
-from pydantic import Field
+# this file contains all the really basic classes
+# that will be handled and used, and extended alongside their
+# type definitions by the runner and stored to and from the
+# planning tasks
 
-# region base cp_sat
-
-class CpSatTask:
+class Constraint(ABC):
     """
-    the basic interval settings used to communicate with the or-tools
+    The constraint, as defined in the generic constraint satisfaction
+    problem, is here a set that links two or more tasks (or in general, whatever element
+    in this file)
     """
-    start: Optional[IntVar]
-    end: Optional[IntVar]
-    interval: Optional[IntervalVar]
 
-# endregion base cp_sat
-
-
-class BasePlannerSolverDocument(Document):
+class Resource(ABC):
     """
-    used only to store and retrieve task data
-    never used directly in the software
+    the resource identifies all the stuffs that are linked
+    to the full planning event, and that have a finite quantity
+    thus has to create constraints to check their availability
 
-    don't forget to add every new model to mongodb_service.py
+    e.g. a resource is the machine, the number of operators
+    or the max current drain of the shop floor
     """
-    uuid: UUID = Field(default_factory=uuid4)
 
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
-
-    is_deleted: bool = Field(default=False)
-
-class TaskDocument(BasePlannerSolverDocument):
+class Task(ABC):
     """
-    the saved task entity, used only to store and retrieve task data
-    never used directly in the software
+    The task is the single atomic value that can be planned
+    by itself is not usable, as per every other type you need to
+    provide a decorated type that can be manipulated
     """
-    label: str
-    data: Dict[str, Any] = {}
 
-    class Settings:
-        name = "ps_documents"
-        indexes = [
-            [
-                ("uuid", pymongo.TEXT),
-                ("label", pymongo.TEXT)
-            ]
-        ]
+    @abstractmethod
+    def get_duration(self) -> int:
+        """
+        the duration is evaluated right before the task is turned into
+        a set of solver variables
+        this means that, for tasks where this duration can depend on different
+        variables, you have to take into account the existence of these dependencies
+        """
+        pass
 
-class ConstraintDocument(BasePlannerSolverDocument):
-    """
-    the saved constraint entity, used only to store and retrieve task data
-    never used directly in the software
-    """
-    label: str
-    data: Dict[str, Any] = {}
+    @abstractmethod
+    def get_constraints(self) -> List[Constraint]:
+        """
+        returns the task-level constraints
+        this is evaluated right before the model is run, in order to create the constraints
+        based on the task implementation these can either be stored or evaluated
+        """
+        pass
 
-    class Settings:
-        name = "ps_constraints"
-        indexes = [
-            [
-                ("uuid", pymongo.TEXT),
-                ("label", pymongo.TEXT)
-            ]
-        ]
+    @abstractmethod
+    def add_constraint(self, constraint: Constraint) -> None:
+        """
+        adds a task-level constraint
+        """
+        pass
 
-class ResourceDocument(BasePlannerSolverDocument):
-    """
-    the saved resource entity, used only to store and retrieve task data
-    never used directly in the software
-    """
-    label: str
-    data: Dict[str, Any] = {}
+    @abstractmethod
+    def get_resources(self) -> List[Resource]:
+        """
+        returns the list of task-level resources
 
-    class Settings:
-        name = "ps_resources",
-        indexes = [
-            [
-                ("uuid", pymongo.TEXT),
-                ("label", pymongo.TEXT)
-            ]
-        ]
+        this is mainly used for specific non-fungible resources
+        like the machine or department
+        when the resource is instead used across many (e.g. the availability of operators regardless
+        of their specification) will be a scenario-level resource
+        """
+        pass
+
+    @abstractmethod
+    def add_resource(self, resource: Resource) -> None:
+        """
+        adds a new task-level resource
+        """
+        pass

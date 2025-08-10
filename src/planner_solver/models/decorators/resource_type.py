@@ -2,7 +2,7 @@ from typing import Type
 
 from planner_solver.main import types_service
 
-class Resource:
+class ResourceType:
     """
     decorate a class with this to let it behave like a resource
     """

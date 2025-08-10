@@ -4,7 +4,7 @@ from beanie import init_beanie
 from pymongo import AsyncMongoClient
 
 from planner_solver.config.models import MongodbConfig
-from planner_solver.models.base_models import TaskDocument, ConstraintDocument, ResourceDocument
+from planner_solver.models.stored_documents import TaskDocument, ConstraintDocument, ResourceDocument
 
 logger = logging.getLogger(__name__)
 

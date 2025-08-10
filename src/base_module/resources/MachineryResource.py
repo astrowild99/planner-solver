@@ -1,6 +1,6 @@
-from planner_solver.models.decorators.resource import ResourceParameter, Resource
+from planner_solver.models.decorators.resource_type import ResourceParameter, ResourceType
 
 
-@Resource(type_name="machinery_resource")
+@ResourceType(type_name="machinery_resource")
 class MachineryResource:
     machine_name = ResourceParameter()

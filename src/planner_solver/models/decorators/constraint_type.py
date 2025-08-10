@@ -2,7 +2,7 @@ from typing import Type
 
 from planner_solver.main import types_service
 
-class Constraint:
+class ConstraintType:
     def __init__(self, type_name):
         self.type_name = type_name
 

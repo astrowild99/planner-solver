@@ -1,6 +1,6 @@
-from planner_solver.models.decorators.constraint import Constraint, ConstraintParameter
+from planner_solver.models.decorators.constraint_type import ConstraintType, ConstraintParameter
 
 
-@Constraint(type_name="after_constraint")
+@ConstraintType(type_name="after_constraint")
 class AfterConstraint:
     task = ConstraintParameter()
