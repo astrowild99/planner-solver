@@ -1,7 +1,7 @@
 from typing import Type
 
 from planner_solver.main import types_service
-from planner_solver.models.decorators.parameters import Parameter
+from planner_solver.decorators.parameters import Parameter
 
 
 class TaskType:
@@ -17,6 +17,8 @@ class TaskType:
         setattr(cls, '__ps_type_type', 'task')
 
         types_service.register_task_type(cls)
+
+        return cls
 
 class TaskParameter(Parameter):
     pass

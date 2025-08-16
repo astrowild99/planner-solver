@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List
 
 import pymongo
-from beanie import Document
+from beanie import Document, Link
 from uuid import UUID, uuid4
 
 from ortools.sat.python.cp_model import IntVar, IntervalVar
@@ -25,9 +25,10 @@ class CpSatTask:
 class BasePlannerSolverDocument(Document):
     """
     used only to store and retrieve task data
-    never used directly in the software
+    never used directly in the software, instead obtain the
+    ready entity, that explodes the data
 
-    don't forget to add every new model to mongodb_service.py
+    don't forget to add every new model to mongodb_service.py set of retriever
     """
     uuid: UUID = Field(default_factory=uuid4)
 
@@ -80,6 +81,28 @@ class ResourceDocument(BasePlannerSolverDocument):
 
     class Settings:
         name = "ps_resources",
+        indexes = [
+            [
+                ("uuid", pymongo.TEXT),
+                ("label", pymongo.TEXT)
+            ]
+        ]
+
+class ScenarioDocument(BasePlannerSolverDocument):
+    """
+    The document that lists the scenario
+    Has a unique id used to identify the scenario, and is the main communication
+    between the solver and the outside world
+    """
+    label: str
+
+    # here the data are hard coded as links in beanie
+    tasks: Optional[List[Link[TaskDocument]]]
+    constraints: Optional[List[Link[ConstraintDocument]]]
+    resources: Optional[List[Link[ResourceDocument]]]
+
+    class Settings:
+        name = "ps_scenarios"
         indexes = [
             [
                 ("uuid", pymongo.TEXT),

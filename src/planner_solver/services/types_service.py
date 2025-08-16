@@ -18,6 +18,9 @@ class TypesService:
         self.__task_types: List[Type] = []
         self.__resource_types: List[Type] = []
         self.__constraint_types: List[Type] = []
+        self.__solver_types: List[Type] = []
+        self.__scenario_types: List[Type] = []
+        self.__target_types: List[Type] = []
         logger.info("Service loaded")
 
     def register_task_type(self, task: Type) -> None:
@@ -40,3 +43,24 @@ class TypesService:
         """
         self.__constraint_types.append(constraint)
         logger.debug("Added new constraint type " + str(constraint))
+
+    def register_solver_type(self, solver: Type) -> None:
+        """
+        registers a new solver
+        """
+        self.__solver_types.append(solver)
+        logger.debug("Added new solver type " + str(solver))
+
+    def register_scenario_type(self, scenario: Type) -> None:
+        """
+        registers a new scenario type
+        """
+        self.__scenario_types.append(scenario)
+        logger.debug("Added new scenario type " + str(scenario))
+
+    def register_target_type(self, target: Type) -> None:
+        """
+        registers a new target function type
+        """
+        self.__target_types.append(target)
+        logger.debug("Added new target function type " + str(target))

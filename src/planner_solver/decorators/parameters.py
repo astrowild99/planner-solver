@@ -12,7 +12,7 @@ class Parameter(ABC):
 
     def __set_name__(self, owner, name):
         self.name = name
-        if self.extra_name == None:
+        if self.extra_name is None:
             self.extra_name = name
         self.private_name = f"_{name}"
 

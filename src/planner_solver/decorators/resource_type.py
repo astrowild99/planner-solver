@@ -1,7 +1,7 @@
 from typing import Type
 
 from planner_solver.main import types_service
-from planner_solver.models.decorators.parameters import Parameter
+from planner_solver.decorators.parameters import Parameter
 
 
 class ResourceType:
@@ -16,6 +16,8 @@ class ResourceType:
         setattr(cls, '__ps_type_type', 'resource')
 
         types_service.register_resource_type(cls)
+
+        return cls
 
 class ResourceParameter(Parameter):
     """
