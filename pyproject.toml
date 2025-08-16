@@ -23,6 +23,12 @@ where = ["src"]
 [tool.setuptools.package-dir]
 "" = "src"
 
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = [
+    "tests"
+]
+
 [project.scripts]
 planner-solver="planner_solver.main:run"
 planner-solver-runner="planner_solver.main:runner_run"

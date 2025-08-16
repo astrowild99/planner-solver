@@ -1,9 +1,9 @@
 services:
-  planner-solver: &planner-solver
+  planner-solver:
     build:
       context: .
       dockerfile: Dockerfile
-      target: dev
+      target: test
       network: host
     develop:
       watch:
@@ -13,23 +13,14 @@ services:
           ignore:
             - "**/__pycache__"
             - "**/*.pyc"
-    volumes:
-      - ./configs:/usr/src/app/configs
-      - ./modules:/usr/src/app/modules
     networks:
-      - planner-solver
-    restart: no # change in production
+      - test-planner-solver
+    restart: no
     depends_on:
       mongo-db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-
-  planner-solver-runner:
-    <<: *planner-solver
-    command:
-      - planner-solver-runner
-    scale: ${NUM_WORKERS:-2}
 
   mongo-db:
     image: mongo:noble
@@ -42,12 +33,10 @@ services:
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       start_period: 10s
-    volumes:
-      - mongo-db-data:/data/db
-    ports: # disable in prod
-      - "27017:27017"
+    tmpfs:
+      - /data/db
     networks:
-      - planner-solver
+      - test-planner-solver
 
   rabbitmq:
     image: rabbitmq:management-alpine
@@ -58,17 +47,11 @@ services:
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
       start_period: 10s
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    ports: # disable in prod
-      - "15672:15672"
+    tmpfs:
+      - /var/lib/rabbitmq
     networks:
-      - planner-solver
-
-volumes:
-  mongo-db-data:
-  rabbitmq-data:
+      - test-planner-solver
 
 networks:
-  planner-solver:
-    driver: bridge
+  test-planner-solver:
+    internal: true

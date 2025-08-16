@@ -21,3 +21,7 @@ COPY configs base_configs
 RUN pip install -e .
 
 CMD "planner-solver"
+
+FROM dev AS test
+
+CMD "echo 'run pydantic for tests'"
