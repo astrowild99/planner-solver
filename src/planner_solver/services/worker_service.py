@@ -1,11 +1,14 @@
+import copy
 import logging
-from enum import Enum
-from typing import List, Dict, Any
+from enum import IntEnum
+from typing import List
 
+from ortools.sat.cp_model_pb2 import CpSolverStatus
 from ortools.sat.python.cp_model import CpModel, CpSolver
-from pydantic import BaseModel
 
-from planner_solver.models.base_models import Scenario, Solver, Resource, Task, Target, WrappedModel, Constraint
+from planner_solver.exceptions.worker_exceptions import WorkerStatusException
+from planner_solver.models.base_models import Scenario, Solver, Resource, Task, Target, WrappedModel, Constraint, \
+    ScenarioStatus, TaskStatus, WrappedSolver
 from planner_solver.services.mongodb_service import MongodbService
 from planner_solver.services.rabbitmq_service import RabbitmqService
 
@@ -32,7 +35,7 @@ class WorkerTaskInput:
         self.scenario = scenario
         self.solver = solver
 
-class WorkerTaskOutputStatus(Enum):
+class WorkerTaskOutputStatus(IntEnum):
     """
     simpler enum to wrap the solver result. The descriptions are copied from cp_model_pb2.pyi
     """
@@ -68,13 +71,29 @@ class WorkerTaskOutputStatus(Enum):
     FEASIBLE.
     """
 
+    @staticmethod
+    def from_cp_status(cp_status: CpSolverStatus) -> "WorkerTaskOutputStatus":
+        return WorkerTaskOutputStatus(cp_status)
+
+
 class WorkerTaskOutput:
     """
     this wraps everything that returns from a worker execution
+    on the main thread. Side effects are handled outside
     """
     status: WorkerTaskOutputStatus
-    # todo continue here
+    wrapped_solver: WrappedSolver
+    scenario: Scenario
 
+    def __init__(
+            self,
+            status: WorkerTaskOutputStatus,
+            wrapped_solver: WrappedSolver,
+            scenario: Scenario
+    ):
+        self.status = status
+        self.wrapped_solver = wrapped_solver
+        self.scenario = scenario
 
 class WorkerService:
     """
@@ -276,8 +295,9 @@ class WorkerService:
         use this result to actually start a worker, based on the settings
         """
         wrapped_model = self._boot_model()
-        variables: Dict[str, Any] = {}
         logger.debug("Created model")
+
+        # todo add preprocessor for fixed statuses
 
         resources = self._fetch_resources(scenario)
         logger.debug(f"Loaded {len(resources)} resources")
@@ -325,10 +345,45 @@ class WorkerService:
             solver=cp_solver
         )
 
+    def _assign_scenario_results(
+            self,
+            wrapped_model: WrappedModel,
+            wrapped_solver: WrappedSolver,
+            scenario: Scenario,
+            solver_status: WorkerTaskOutputStatus
+    ) -> Scenario:
+        """
+        Creates a new scenario with the results obtained from the computation
+        """
+        solved_scenario = copy.deepcopy(scenario)
+
+        if (solver_status == WorkerTaskOutputStatus.UNKNOWN or
+            solver_status == WorkerTaskOutputStatus.MODEL_INVALID or
+            solver_status == WorkerTaskOutputStatus.INFEASIBLE):
+            raise WorkerStatusException(int(solver_status), 'You should not assign scenario results if model fails')
+
+        # set the scenario status
+        solved_scenario.update_scenario_status(ScenarioStatus.SOLVED)
+
+        # set the status for each task and block their data
+        for task in solved_scenario.get_tasks():
+            task.update_task_status(TaskStatus.PLANNED)
+
+            start = wrapped_solver.solver.value(task.cp_sat.start)
+            end = wrapped_solver.solver.value(task.cp_sat.end)
+
+            task.generate_result(
+                start=start,
+                end=end
+            )
+
+        return solved_scenario
+
+
     def solve_synchronously(
             self,
             task: WorkerTaskInput
-    ):
+    ) -> WorkerTaskOutput:
         """
         solves the task without any callback during execution
         one thread per worker
@@ -339,5 +394,25 @@ class WorkerService:
         scenario = task.scenario
         solver = task.solver
 
+        wrapped_solver = WrappedSolver(
+            solver=solver,
+            variables=task.wrapped_model.variables
+        )
+
         solve_status = solver.solve(model)
         logger.debug(f"Model solved with status {solve_status}")
+
+        worker_solver_status = WorkerTaskOutputStatus.from_cp_status(solve_status)
+
+        result_scenario = self._assign_scenario_results(
+            wrapped_model=task.wrapped_model,
+            wrapped_solver=wrapped_solver,
+            scenario=scenario,
+            solver_status=worker_solver_status
+        )
+
+        return WorkerTaskOutput(
+            wrapped_solver=wrapped_solver,
+            scenario=result_scenario,
+            status=worker_solver_status
+        )

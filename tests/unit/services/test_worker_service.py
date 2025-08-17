@@ -1,5 +1,5 @@
 import logging
-import sys
+from typing import List, cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -10,8 +10,8 @@ from base_module.scenarios.simple_shop_floor import SimpleShopFloorScenario
 from base_module.solvers.simple_solver import SimpleSolver
 from base_module.targets.minimum_time_target import MinimumTypeTarget
 from base_module.tasks.fixed_duration_task import FixedDurationTask
-from planner_solver.config.models import ModuleConfig, MongodbConfig
-from planner_solver.models.base_models import Scenario
+from planner_solver.config.models import ModuleConfig
+from planner_solver.models.base_models import Task
 from planner_solver.services.module_loader_service import ModuleLoaderService
 from planner_solver.services.mongodb_service import MongodbService
 from planner_solver.services.rabbitmq_service import RabbitmqService
@@ -50,8 +50,10 @@ async def test_simple_worker(
 
     # a simple couple tasks
     task_a = FixedDurationTask()
+    task_a.label = 'task_a'
     task_a.duration = 2
     task_b = FixedDurationTask()
+    task_b.label = 'task_b'
     task_b.duration = 3
 
     # a simple relation between the two
@@ -80,5 +82,27 @@ async def test_simple_worker(
 
     worker_unit = worker_service.prepare_worker(scenario, solver, target)
 
-    worker_service.solve_synchronously(worker_unit)
-    # todo finish the test
+    result = worker_service.solve_synchronously(worker_unit)
+
+    assert result.wrapped_solver.solver is not None
+    assert len(result.wrapped_solver.variables) >= 6
+    assert len(result.scenario.get_tasks()) == 2
+
+    def find_task(tasks: List[FixedDurationTask], label: str) -> List[Task]:
+        found: List[Task] = []
+        for t in tasks:
+            if t.label == label:
+                found.append(t)
+
+        return found
+
+    tasks: List[FixedDurationTask] = cast(List[FixedDurationTask], result.scenario.get_tasks())
+    task_a = find_task(tasks, 'task_a')[0]
+    assert task_a is not None
+    assert task_a.result.start == 3
+    assert task_a.result.end == 5
+
+    task_b = find_task(tasks, 'task_b')[0]
+    assert task_b is not None
+    assert task_b.result.start == 0
+    assert task_b.result.end == 3

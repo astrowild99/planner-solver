@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
-from enum import Enum
+from enum import Enum, IntEnum
 
 from ortools.sat.python.cp_model import CpModel, CpSolver, IntVar, IntervalVar
 from pydantic import BaseModel
@@ -21,6 +21,16 @@ class WrappedModel(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+class WrappedSolver(BaseModel):
+    """
+    Wraps the solver and its variables for easy retrieval
+    """
+    solver: CpSolver
+    variables: Dict[str, Any]
+
+    class Config:
+        arbitrary_types_allowed = True
+
 class CpSatTask(BaseModel):
     """
     the cp-sat variables that I need to link to a task
@@ -28,6 +38,13 @@ class CpSatTask(BaseModel):
     start: Optional[IntVar]
     end: Optional[IntVar]
     interval: Optional[IntervalVar]
+
+    class Config:
+        arbitrary_types_allowed = True
+
+class ResultTask(BaseModel):
+    start: Optional[int]
+    end: Optional[int]
 
     class Config:
         arbitrary_types_allowed = True
@@ -73,10 +90,18 @@ class TaskStatus(Enum):
     """
     The status of a task
     """
-    CREATED = 0 # task data are here, but the solver variables are not yet ready
-    READY = 1 # ready to be planned, still not determined
-    PLANNED = 2 # the content within the status is determined by the solver
-    FIXED = 3 # external factors (e.g. current realization status) set the start and end of the task
+    CREATED = 0
+    """task data are here, but the solver variables are not yet ready
+    """
+    READY = 1
+    """ready to be planned, still not determined
+    """
+    PLANNED = 2
+    """the content within the status is determined by the solver
+    """
+    FIXED = 3
+    """external factors (e.g. current realization status) set the start and end of the task
+    """
 
 class Task(ABC):
     """
@@ -87,6 +112,7 @@ class Task(ABC):
     def __init__(self):
         self.__status = TaskStatus.CREATED
         self.cp_sat: None | CpSatTask = None
+        self.result: None | ResultTask = None
 
     def get_task_status(self) -> TaskStatus:
         return self.__status
@@ -96,6 +122,18 @@ class Task(ABC):
         Only the solver should set this to PLANNED
         """
         self.__status = task_status
+
+    def generate_result(
+            self,
+            start: int,
+            end: int
+    ) -> ResultTask:
+        res = ResultTask(
+            start=start,
+            end=end
+        )
+        self.result = res
+        return res
 
     @abstractmethod
     def generate_cp_sat(
@@ -180,7 +218,7 @@ class Target(ABC):
     ) -> None:
         pass
 
-class SolveStatus(Enum):
+class ScenarioStatus(IntEnum):
     """
     the current status of a scenario
     """
@@ -199,12 +237,12 @@ class Scenario(ABC):
     """
 
     def __init__(self):
-        self.__status = SolveStatus.CREATED
+        self.__status = ScenarioStatus.CREATED
 
-    def get_solve_status(self) -> SolveStatus:
+    def get_scenario_status(self) -> ScenarioStatus:
         return self.__status
 
-    def set_solve_status(self, solve_status: SolveStatus):
+    def update_scenario_status(self, solve_status: ScenarioStatus):
         """
         only the solver should set this to solved
         """

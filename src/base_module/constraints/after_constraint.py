@@ -7,7 +7,9 @@ from planner_solver.models.base_models import Constraint, Task
 @ConstraintType(type_name="after_constraint")
 class AfterConstraint(Constraint):
 
-    task = ConstraintParameter()
+    task = ConstraintParameter(
+        param_type=Task,
+    )
 
     def attach_task_constraint(self, model: CpModel, task: Task):
         # todo test type safety here

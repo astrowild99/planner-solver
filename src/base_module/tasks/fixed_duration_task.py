@@ -8,8 +8,12 @@ from planner_solver.services.worker_service import WrappedModel
 
 @TaskType(type_name="fixed_duration_task")
 class FixedDurationTask(Task):
-
-    duration = TaskParameter()
+    label = TaskParameter(
+        param_type=str
+    )
+    duration = TaskParameter(
+        param_type=int
+    )
 
     __uuid: str
 

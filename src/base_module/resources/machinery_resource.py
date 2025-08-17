@@ -8,7 +8,9 @@ from planner_solver.models.base_models import Resource, Task
 
 @ResourceType(type_name="machinery_resource")
 class MachineryResource(Resource):
-    machine_name = ResourceParameter()
+    machine_name = ResourceParameter(
+        param_type=str
+    )
 
     __attached_tasks: List[Task]
 

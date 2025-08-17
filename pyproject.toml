@@ -30,7 +30,7 @@ testpaths = [
 ]
 
 [tool.pytest]
-addopts = ['-s']
+addopts = ['-v -s --tb=short --showlocals']
 
 [project.scripts]
 planner-solver="planner_solver.main:run"
