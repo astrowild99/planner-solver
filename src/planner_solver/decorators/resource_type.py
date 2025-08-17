@@ -1,6 +1,6 @@
 from typing import Type
 
-from planner_solver.main import types_service
+from planner_solver.containers.singletons import types_service
 from planner_solver.decorators.parameters import Parameter
 
 

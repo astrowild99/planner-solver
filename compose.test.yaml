@@ -13,8 +13,16 @@ services:
           ignore:
             - "**/__pycache__"
             - "**/*.pyc"
+        - path: tests
+          action: sync+restart
+          target: /usr/src/app/tests
+          ignore:
+            - "**/__pycache__"
+            - "**/*.pyc"
     networks:
       - test-planner-solver
+    volumes:
+      - ./tests/integration/configs:/usr/src/app/configs
     restart: no
     depends_on:
       mongo-db:

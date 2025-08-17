@@ -3,8 +3,6 @@ from datetime import datetime
 
 from planner_solver.services.types_service import TypesService
 
-types_service = TypesService()
-
 def run():
     container = ApplicationContainer()
     container.init_resources()

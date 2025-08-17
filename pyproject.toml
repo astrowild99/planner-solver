@@ -13,6 +13,8 @@ requires-python = ">= 3.11"
 dependencies = [
     "ortools",
     "dependency-injector",
+    "pydantic",
+    "beanie",
     "pydantic-settings[yaml]>=2.1.0",
     "pyyaml>=6.0"
 ]

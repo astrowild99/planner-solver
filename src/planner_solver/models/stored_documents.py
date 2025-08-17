@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Optional, Any, Dict, List
 
@@ -6,20 +5,7 @@ import pymongo
 from beanie import Document, Link
 from uuid import UUID, uuid4
 
-from ortools.sat.python.cp_model import IntVar, IntervalVar
 from pydantic import Field
-
-# region base cp_sat
-
-class CpSatTask:
-    """
-    the basic interval settings used to communicate with the or-tools
-    """
-    start: Optional[IntVar]
-    end: Optional[IntVar]
-    interval: Optional[IntervalVar]
-
-# endregion base cp_sat
 
 
 class BasePlannerSolverDocument(Document):
@@ -80,7 +66,7 @@ class ResourceDocument(BasePlannerSolverDocument):
     data: Dict[str, Any] = {}
 
     class Settings:
-        name = "ps_resources",
+        name = "ps_resources"
         indexes = [
             [
                 ("uuid", pymongo.TEXT),

@@ -7,6 +7,7 @@ from planner_solver.services.module_loader_service import ModuleLoaderService
 from planner_solver.services.mongodb_service import MongodbService
 from planner_solver.services.rabbitmq_service import RabbitmqService
 from planner_solver.services.time_service import TimeService
+from planner_solver.containers.singletons import types_service
 
 def configure_logging(config: LoggingConfig) -> None:
     print("Logging level set to " + str(config.get_logger_level()))
@@ -50,6 +51,7 @@ class ApplicationContainer(containers.DeclarativeContainer):
     mongodb_service = providers.Singleton(
         MongodbService,
         config=mongodb_config,
+        types_service=types_service,
     )
 
     rabbitmq_service = providers.Singleton(

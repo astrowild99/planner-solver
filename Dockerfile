@@ -24,4 +24,4 @@ CMD "planner-solver"
 
 FROM dev AS test
 
-CMD "echo 'run pydantic for tests'"
+CMD echo "Ready" && sleep infinity
