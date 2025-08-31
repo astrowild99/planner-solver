@@ -2,7 +2,8 @@ import logging
 import sys
 
 from dependency_injector import containers, providers
-from planner_solver.config.models import TimeConfig, ModuleConfig, MongodbConfig, RabbitmqConfig, LoggingConfig
+from planner_solver.config.models import TimeConfig, ModuleConfig, MongodbConfig, RabbitmqConfig, LoggingConfig, \
+    ApiConfig
 from planner_solver.services.module_loader_service import ModuleLoaderService
 from planner_solver.services.mongodb_service import MongodbService
 from planner_solver.services.rabbitmq_service import RabbitmqService
@@ -29,6 +30,7 @@ class ApplicationContainer(containers.DeclarativeContainer):
     module_config = providers.Singleton(ModuleConfig)
     mongodb_config = providers.Singleton(MongodbConfig)
     rabbitmq_config = providers.Singleton(RabbitmqConfig)
+    api_config = providers.Singleton(ApiConfig)
 
     # endregion config
 

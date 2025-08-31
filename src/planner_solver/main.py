@@ -1,3 +1,5 @@
+import subprocess
+
 from planner_solver.containers.application import ApplicationContainer
 from datetime import datetime
 
@@ -12,10 +14,25 @@ def run():
     mongodb_service = container.mongodb_service()
     rabbitmq_service = container.rabbitmq_service()
 
+    api_config = container.api_config()
+
     module_loader.load_all()
     
     print (time_service.convert(datetime.now()))
     print ("Loaded " + str(len(module_loader.loaded_modules)) + " modules")
+
+    cmd = [
+        "uvicorn",
+        "planner_solver.api:app",
+        "--host",
+        api_config.host,
+        "--port",
+        str(api_config.port),
+        "--log-level",
+        api_config.log_level,
+    ]
+
+    subprocess.run(cmd)
 
 def runner_run():
     container = ApplicationContainer()

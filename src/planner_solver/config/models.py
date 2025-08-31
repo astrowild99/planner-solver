@@ -116,3 +116,14 @@ class MongodbConfig(YamlBaseSettings):
     )
 
     connection: MongodbConnectionConfig
+
+class ApiConfig(YamlBaseSettings):
+    model_config = SettingsConfigDict(
+        yaml_file="configs/api.yaml",
+        env_prefix="API_",
+        case_sensitive=False
+    )
+
+    host: str
+    port: str|int
+    log_level: str
