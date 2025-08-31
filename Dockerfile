@@ -24,4 +24,6 @@ CMD "planner-solver"
 
 FROM dev AS test
 
+COPY tests tests
+
 CMD echo "Ready" && sleep infinity

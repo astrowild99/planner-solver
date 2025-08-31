@@ -1,6 +1,7 @@
 from unittest.mock import patch, MagicMock
 
 import pytest
+import pathlib
 
 from planner_solver.config.models import ModuleConfig
 from planner_solver.services.module_loader_service import ModuleLoaderService
@@ -8,7 +9,10 @@ from planner_solver.services.module_loader_service import ModuleLoaderService
 @pytest.fixture
 def mock_module_config():
     config = MagicMock(spec=ModuleConfig)
-    config.module_paths = ['./../src/base_module']
+    # I use the current file as base to head to the modules
+    filepath = str(pathlib.Path(__file__).parent)
+
+    config.module_paths = [filepath + '/../../../src/base_module']
     return config
 
 def test_load_base_module(mock_module_config):

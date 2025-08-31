@@ -37,3 +37,43 @@ jobs:
         run: |
           echo "Building all services from compose.yaml..."
           docker compose build --parallel
+
+  test:
+    name: Test
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Buildx setup
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Test services
+        run: |
+          echo "Building the test services..."
+          docker compose -f compose.test.yaml
+
+      - name: Start Needed services
+        run: |
+          echo "Starting the services"
+          docker compose -f compose.test.yaml up --scale planner-solver=0 -d
+          docker compose -f compose.test.yaml ps
+
+      - name: Run Tests
+        run: |
+          docker compose -f compose.test.yaml run --rm planner-solver python -m pytest
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose -f compose.test.yaml down -v --remove-orphans
