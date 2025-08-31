@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 from beanie import init_beanie
 from pymongo import AsyncMongoClient
@@ -43,10 +44,11 @@ class MongodbService:
             ]
         )
 
-    async def test_connect(self):
-        await self.__connect()
-
     # region task
+
+    async def _get_task_documents(self) -> List[TaskDocument]:
+        await self.__connect()
+        return await TaskDocument.find_all().to_list()
 
     async def _get_task_document(self, uuid: str) -> TaskDocument | None:
         await self.__connect()
@@ -58,6 +60,10 @@ class MongodbService:
 
     # region constraint
 
+    async def _get_constraint_documents(self) -> List[ConstraintDocument]:
+        await self.__connect()
+        return await ConstraintDocument.find_all().to_list()
+
     async def _get_constraint_document(self, uuid: str) -> ConstraintDocument | None:
         await self.__connect()
         return await ConstraintDocument.find(
@@ -68,6 +74,10 @@ class MongodbService:
 
     # region resource
 
+    async def _get_resource_documents(self) -> List[ResourceDocument]:
+        await self.__connect()
+        return await ResourceDocument.find_all().to_list()
+
     async def _get_resource_document(self, uuid: str) -> ResourceDocument | None:
         await self.__connect()
         return await ResourceDocument.find(
@@ -76,4 +86,16 @@ class MongodbService:
 
     # endregion resource
 
-    # region
+    # region scenario
+
+    async def _get_scenario_documents(self) -> List[ScenarioDocument]:
+        await self.__connect()
+        return await ScenarioDocument.find_all().to_list()
+
+    async def _get_scenario_document(self, uuid: str) -> ScenarioDocument:
+        await self.__connect()
+        return await ScenarioDocument.find(
+            ScenarioDocument.uuid == uuid
+        ).first_or_none()
+
+    # endregion scenario
