@@ -1,0 +1,65 @@
+services:
+  planner-solver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+      network: host
+    develop:
+      watch:
+        - path: src
+          action: sync+restart
+          target: /usr/src/app/src
+          ignore:
+            - "**/__pycache__"
+            - "**/*.pyc"
+        - path: tests
+          action: sync+restart
+          target: /usr/src/app/tests
+          ignore:
+            - "**/__pycache__"
+            - "**/*.pyc"
+    networks:
+      - test-planner-solver
+    volumes:
+      - ./tests/integration/configs:/usr/src/app/configs
+    restart: no
+    depends_on:
+      mongo-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  mongo-db:
+    image: mongo:noble
+    restart: unless-stopped
+    command: mongod --quiet --logpath /dev/null
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: planner_solver
+      MONGO_INITDB_DATABASE: planner_solver
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      start_period: 10s
+    tmpfs:
+      - /data/db
+    networks:
+      - test-planner-solver
+
+  rabbitmq:
+    image: rabbitmq:management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: root
+      RABBITMQ_DEFAULT_PASS: planner_solver
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
+      start_period: 10s
+    tmpfs:
+      - /var/lib/rabbitmq
+    networks:
+      - test-planner-solver
+
+networks:
+  test-planner-solver:
+    internal: true

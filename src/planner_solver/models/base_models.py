@@ -1,0 +1,299 @@
+from abc import ABC, abstractmethod
+from typing import List, Optional, Dict, Any
+from enum import Enum, IntEnum
+
+from ortools.sat.python.cp_model import CpModel, CpSolver, IntVar, IntervalVar
+from pydantic import BaseModel
+
+
+# this file contains all the really basic classes
+# that will be handled and used, and extended alongside their
+# type definitions by the runner and stored to and from the
+# planning tasks
+
+class WrappedModel(BaseModel):
+    """
+    Wraps the model and its variables for easy retrieval
+    """
+    model: CpModel
+    variables: Dict[str, Any]
+
+    class Config:
+        arbitrary_types_allowed = True
+
+class WrappedSolver(BaseModel):
+    """
+    Wraps the solver and its variables for easy retrieval
+    """
+    solver: CpSolver
+    variables: Dict[str, Any]
+
+    class Config:
+        arbitrary_types_allowed = True
+
+class CpSatTask(BaseModel):
+    """
+    the cp-sat variables that I need to link to a task
+    """
+    start: Optional[IntVar]
+    end: Optional[IntVar]
+    interval: Optional[IntervalVar]
+
+    class Config:
+        arbitrary_types_allowed = True
+
+class ResultTask(BaseModel):
+    start: Optional[int]
+    end: Optional[int]
+
+    class Config:
+        arbitrary_types_allowed = True
+
+class Constraint(ABC):
+    """
+    The constraint, as defined in the generic constraint satisfaction
+    problem, is here a set that links two or more tasks (or in general, whatever element
+    in this file)
+    """
+
+    @abstractmethod
+    def attach_task_constraint(self, model: CpModel, task: "Task") -> None:
+        pass
+
+    @abstractmethod
+    def attach_scenario_constraint(self, model: CpModel) -> None:
+        pass
+
+class Resource(ABC):
+    """
+    the resource identifies all the stuffs that are linked
+    to the full planning event, and that have a finite quantity
+    thus has to create constraints to check their availability
+
+    e.g. a resource is the machine, the number of operators
+    or the max current drain of the shop floor
+    """
+
+    @abstractmethod
+    def prepare_resource(self, model: CpModel) -> None:
+        pass
+
+    @abstractmethod
+    def attach_task_resource(self, model: CpModel, task: "Task"):
+        pass
+
+    @abstractmethod
+    def attach_scenario_resource(self, model: CpModel) -> None:
+        pass
+
+class TaskStatus(Enum):
+    """
+    The status of a task
+    """
+    CREATED = 0
+    """task data are here, but the solver variables are not yet ready
+    """
+    READY = 1
+    """ready to be planned, still not determined
+    """
+    PLANNED = 2
+    """the content within the status is determined by the solver
+    """
+    FIXED = 3
+    """external factors (e.g. current realization status) set the start and end of the task
+    """
+
+class Task(ABC):
+    """
+    The task is the single atomic value that can be planned
+    by itself is not usable, as per every other type you need to
+    provide a decorated type that can be manipulated
+    """
+    def __init__(self):
+        self.__status = TaskStatus.CREATED
+        self.cp_sat: None | CpSatTask = None
+        self.result: None | ResultTask = None
+
+    def get_task_status(self) -> TaskStatus:
+        return self.__status
+
+    def update_task_status(self, task_status: TaskStatus):
+        """
+        Only the solver should set this to PLANNED
+        """
+        self.__status = task_status
+
+    def generate_result(
+            self,
+            start: int,
+            end: int
+    ) -> ResultTask:
+        res = ResultTask(
+            start=start,
+            end=end
+        )
+        self.result = res
+        return res
+
+    @abstractmethod
+    def generate_cp_sat(
+            self,
+            wrapped_model: WrappedModel,
+            horizon: int
+    ) -> CpSatTask:
+        """
+        generates and stores in the task the cpSatTask
+        filling the wrapped model
+        """
+
+    @abstractmethod
+    def get_unique_id(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_duration(self) -> int:
+        """
+        the duration is evaluated right before the task is turned into
+        a set of solver variables
+        this means that, for tasks where this duration can depend on different
+        variables, you have to take into account the existence of these dependencies
+        """
+        pass
+
+    @abstractmethod
+    def get_max_duration(self) -> int:
+        """
+        if the duration is not fixed, this has to return the max duration that the task
+        can use, so that it becomes possible to evaluate the horizon for the model
+        """
+        pass
+
+    @abstractmethod
+    def get_constraints(self) -> List[Constraint]:
+        """
+        returns the task-level constraints
+        this is evaluated right before the model is run, in order to create the constraints
+        based on the task implementation these can either be stored or evaluated
+        """
+        pass
+
+    @abstractmethod
+    def add_constraint(self, constraint: Constraint) -> None:
+        """
+        adds a task-level constraint
+        """
+        pass
+
+    @abstractmethod
+    def get_resources(self) -> List[Resource]:
+        """
+        returns the list of task-level resources
+
+        this is mainly used for specific non-fungible resources
+        like the machine or department
+        when the resource is instead used across many (e.g. the availability of operators regardless
+        of their specification) will be a scenario-level resource
+        """
+        pass
+
+    @abstractmethod
+    def add_resource(self, resource: Resource) -> None:
+        """
+        adds a new task-level resource
+        """
+        pass
+
+class Target(ABC):
+    """
+    the target function definition, that instructs the model
+    on the min/maxes that it needs to set as target
+    """
+
+    @abstractmethod
+    def attach_target(
+            self,
+            model: CpModel,
+            horizon: int,
+            tasks: List[Task]
+    ) -> None:
+        pass
+
+class ScenarioStatus(IntEnum):
+    """
+    the current status of a scenario
+    """
+    CREATED = 0 # scenario variables loaded, not yet ready for the solver
+    READY = 1 # ready to be solved
+    SOLVED = 2 # already solved
+    UNSOLVABLE = 99 # the solver couldn't find a solution
+
+class Scenario(ABC):
+    """
+    A scenario is a finite set (solvable or unsolvable) of tasks, constraints and resources
+    that can be solved by the solver.
+
+    It models a real world scenario for the planning. e.g. a week of work on the shop floor
+    or the completion of a task
+    """
+
+    def __init__(self):
+        self.__status = ScenarioStatus.CREATED
+
+    def get_scenario_status(self) -> ScenarioStatus:
+        return self.__status
+
+    def update_scenario_status(self, solve_status: ScenarioStatus):
+        """
+        only the solver should set this to solved
+        """
+        self.__status = solve_status
+
+    @abstractmethod
+    def get_tasks(self) -> List[Task]:
+        """
+        lists all the tasks within the scenario
+
+        based on the status, those will either be planned, solved or fixed
+        """
+        pass
+
+    @abstractmethod
+    def add_task(self, task: Task) -> None:
+        """
+        Adds a task to the list, taking into account its status
+        """
+        pass
+
+    @abstractmethod
+    def get_constraints(self) -> List[Constraint]:
+        """
+        Returns the scenario-wide constraints
+        """
+        pass
+
+    @abstractmethod
+    def add_constraint(self, constraint: Constraint):
+        pass
+
+    @abstractmethod
+    def get_resources(self) -> List[Resource]:
+        """
+        Returns the scenario-wide resources
+        """
+        pass
+
+    @abstractmethod
+    def add_resource(self, resource: Resource):
+        pass
+
+class Solver(ABC):
+    """
+    The solvers are a set of extra settings around the
+    cp sat solver. The system depends on the CPSat interface to function
+    but various tweaks on the initialization and parameters can be performed and
+    stored as Solvers
+    """
+
+    @abstractmethod
+    def generate_solver(self, model: CpModel) -> CpSolver:
+        pass

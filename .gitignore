@@ -1,0 +1,10 @@
+.venv
+.env
+
+.idea
+
+*.snap
+
+venv
+
+build

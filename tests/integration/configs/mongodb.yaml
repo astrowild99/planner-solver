@@ -1,0 +1,6 @@
+connection:
+  host: mongo-db
+  port: 27017
+  username: root
+  password: planner_solver
+  database: planner_solver

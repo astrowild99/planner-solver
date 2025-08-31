@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "planner-solver"
+version = "0.1"
+readme = "README.md"
+authors = [
+    { name = "Donato Mastronardi", email = "donato.mastronardi99@gmail.com" }
+]
+requires-python = ">= 3.11"
+dependencies = [
+    "ortools",
+    "dependency-injector",
+    "pydantic",
+    "beanie",
+    "pydantic-settings[yaml]>=2.1.0",
+    "pyyaml>=6.0"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = [
+    "tests"
+]
+
+[tool.pytest]
+addopts = ['-v -s --tb=short --showlocals']
+
+[project.scripts]
+planner-solver="planner_solver.main:run"
+planner-solver-runner="planner_solver.main:runner_run"
