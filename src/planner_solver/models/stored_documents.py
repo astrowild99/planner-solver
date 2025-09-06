@@ -7,7 +7,6 @@ from uuid import UUID, uuid4
 
 from pydantic import Field
 
-
 class BasePlannerSolverDocument(Document):
     """
     used only to store and retrieve task data

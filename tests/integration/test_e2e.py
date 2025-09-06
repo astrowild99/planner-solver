@@ -25,3 +25,21 @@ async def test_api_docs(
 ):
     response = client.get('/docs')
     assert response.status_code == 200
+
+# region scenarios
+
+@pytest.mark.asyncio
+async def test_scenario_creation(
+        client
+):
+    response = client.post('/scenario', json={
+        "type": "simple_shop_floor",
+        "data": {
+            "label": "lorem ipsum dolor sit amet"
+        }
+    })
+
+    assert response.status_code == 200
+    # todo finish here
+
+# endregion scenarios

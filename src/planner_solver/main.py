@@ -9,17 +9,7 @@ def run():
     container = ApplicationContainer()
     container.init_resources()
 
-    time_service = container.time_service()
-    module_loader = container.module_loader_service()
-    mongodb_service = container.mongodb_service()
-    rabbitmq_service = container.rabbitmq_service()
-
     api_config = container.api_config()
-
-    module_loader.load_all()
-    
-    print (time_service.convert(datetime.now()))
-    print ("Loaded " + str(len(module_loader.loaded_modules)) + " modules")
 
     cmd = [
         "uvicorn",

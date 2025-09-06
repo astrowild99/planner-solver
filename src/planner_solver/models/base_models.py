@@ -49,7 +49,16 @@ class ResultTask(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-class Constraint(ABC):
+class PlannerSolverBaseModel:
+    """
+    wraps a planner solver entity for easy retrieval and type checking
+    """
+    __is_planner_solver_model = True
+
+    class Config:
+        arbitrary_types_allowed = True
+
+class Constraint(ABC, PlannerSolverBaseModel):
     """
     The constraint, as defined in the generic constraint satisfaction
     problem, is here a set that links two or more tasks (or in general, whatever element
@@ -64,7 +73,7 @@ class Constraint(ABC):
     def attach_scenario_constraint(self, model: CpModel) -> None:
         pass
 
-class Resource(ABC):
+class Resource(ABC, PlannerSolverBaseModel):
     """
     the resource identifies all the stuffs that are linked
     to the full planning event, and that have a finite quantity
@@ -103,7 +112,7 @@ class TaskStatus(Enum):
     """external factors (e.g. current realization status) set the start and end of the task
     """
 
-class Task(ABC):
+class Task(ABC, PlannerSolverBaseModel):
     """
     The task is the single atomic value that can be planned
     by itself is not usable, as per every other type you need to
@@ -203,7 +212,7 @@ class Task(ABC):
         """
         pass
 
-class Target(ABC):
+class Target(ABC, PlannerSolverBaseModel):
     """
     the target function definition, that instructs the model
     on the min/maxes that it needs to set as target
@@ -227,7 +236,7 @@ class ScenarioStatus(IntEnum):
     SOLVED = 2 # already solved
     UNSOLVABLE = 99 # the solver couldn't find a solution
 
-class Scenario(ABC):
+class Scenario(ABC, PlannerSolverBaseModel):
     """
     A scenario is a finite set (solvable or unsolvable) of tasks, constraints and resources
     that can be solved by the solver.
@@ -286,7 +295,7 @@ class Scenario(ABC):
     def add_resource(self, resource: Resource):
         pass
 
-class Solver(ABC):
+class Solver(ABC, PlannerSolverBaseModel):
     """
     The solvers are a set of extra settings around the
     cp sat solver. The system depends on the CPSat interface to function

@@ -15,7 +15,7 @@ class ResourceType:
         setattr(cls, '__ps_type_name', self.type_name)
         setattr(cls, '__ps_type_type', 'resource')
 
-        types_service.register_resource_type(cls)
+        types_service.register_resource_type(cls, self.type_name)
 
         return cls
 

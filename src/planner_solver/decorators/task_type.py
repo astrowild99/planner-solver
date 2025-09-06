@@ -16,7 +16,7 @@ class TaskType:
         setattr(cls, '__ps_type_name', self.type_name)
         setattr(cls, '__ps_type_type', 'task')
 
-        types_service.register_task_type(cls)
+        types_service.register_task_type(cls, self.type_name)
 
         return cls
 

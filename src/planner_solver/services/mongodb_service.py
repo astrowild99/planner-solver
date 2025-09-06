@@ -1,10 +1,11 @@
 import logging
-from typing import List
+from typing import List, Optional
 
 from beanie import init_beanie
 from pymongo import AsyncMongoClient
 
 from planner_solver.config.models import MongodbConfig
+from planner_solver.models.base_models import Scenario
 from planner_solver.models.stored_documents import TaskDocument, ConstraintDocument, ResourceDocument, ScenarioDocument
 from planner_solver.services.types_service import TypesService
 
@@ -97,5 +98,14 @@ class MongodbService:
         return await ScenarioDocument.find(
             ScenarioDocument.uuid == uuid
         ).first_or_none()
+
+    async def _store_scenario_document(self, scenario: Scenario, uuid: Optional[str] = None):
+        await self.__connect()
+        if uuid is not None:
+            scenario_document = self._get_scenario_document(uuid)
+        else:
+            scenario_document = ScenarioDocument(
+
+            )
 
     # endregion scenario

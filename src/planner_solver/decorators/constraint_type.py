@@ -16,7 +16,7 @@ class ConstraintType:
         setattr(cls, '__ps_type_name', self.type_name)
         setattr(cls, '__ps_type_type', 'constraint')
 
-        types_service.register_constraint_type(cls)
+        types_service.register_constraint_type(cls, self.type_name)
 
         return cls
 
