@@ -66,37 +66,41 @@ def health_check() -> HealthCheckResponse:
 
 # region scenario
 
-@app.get('/scenario/<uuid_scenario>')
+@app.get('/scenario/{uuid_scenario}')
 async def get_scenario(
         uuid_scenario: str
 ):
-    pass
+    found = await mongodb_service._get_scenario_document(uuid_scenario)
+
+    if not found:
+        raise Exception("scenario not found")
+        # todo handle 404
+    return found.to_base_model().to_form()
 
 @inject
 @app.post('/scenario')
 async def post_scenario(
         scenario_form: BasePlannerSolverForm,
-) -> BasePlannerSolverForm:
+) -> BasePlannerSolverForm[Scenario]:
     """
     creates the scenario
     """
     scenario = cast(BasePlannerSolverForm[Scenario], scenario_form)
     logger.info(f"Created scenario with a basic data: {json.dumps(scenario_form.data)}")
 
-    base_model = scenario_form.to_base_model()
+    base_model = scenario.to_base_model()
 
     await mongodb_service._store_scenario_document(base_model)
 
-    return scenario
+    return base_model.to_form()
 
-
-@app.put('/scenario/<uuid_scenario>')
+@app.put('/scenario/{uuid_scenario}')
 async def put_scenario(
         uuid_scenario: str
 ):
     pass
 
-@app.delete('/scenario/<uuid_scenario>')
+@app.delete('/scenario/{uuid_scenario}')
 async def delete_scenario(
         uuid_scenario: str
 ):

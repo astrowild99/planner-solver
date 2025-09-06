@@ -3,6 +3,7 @@ from typing import TypeVar, Any, Dict, Optional, Generic
 from pydantic import BaseModel
 
 from planner_solver.containers.singletons import types_service
+from planner_solver.models.stored_documents import BasePlannerSolverDocument
 
 T = TypeVar('T')
 
@@ -23,5 +24,3 @@ class BasePlannerSolverForm(BaseModel, Generic[T]):
         model_type: BaseModel = types_service.get(self.type)
 
         return model_type.model_validate(self.data)
-
-        return None

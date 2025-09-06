@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Optional, Any, Dict, List
+from typing import Optional, Any, Dict, List, Type, TYPE_CHECKING
 
 import pymongo
 from beanie import Document, Link
@@ -7,9 +9,11 @@ from uuid import UUID, uuid4
 
 from pydantic import Field
 
+from planner_solver.containers.singletons import types_service
 from planner_solver.exceptions.type_exceptions import TypeException
-from planner_solver.models.base_models import Scenario
 
+if TYPE_CHECKING:
+    from planner_solver.models.base_models import Scenario, Resource, Constraint, Task
 
 class BasePlannerSolverDocument(Document):
     """
@@ -19,7 +23,10 @@ class BasePlannerSolverDocument(Document):
 
     don't forget to add every new model to mongodb_service.py set of retriever
     """
-    uuid: UUID = Field(default_factory=uuid4)
+    uuid: str = Field(default_factory=lambda: str(uuid4()), alias='uuid')
+    """the unique id used to retrieve entities"""
+    type: str | None = Field(default=None)
+    """the type defined in the decorator, used to retrieve the full object"""
 
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
@@ -33,6 +40,18 @@ class TaskDocument(BasePlannerSolverDocument):
     """
     label: str
     data: Dict[str, Any] = {}
+
+    @staticmethod
+    def from_base_model(base_model: Task) -> "TaskDocument":
+        if not hasattr(base_model, 'label'):
+            raise TypeException("You must always define a label!")
+        if not hasattr(base_model, '__ps_type_name'):
+            raise TypeException("Make sure to cast to a type decorated with the module type")
+        return TaskDocument(
+            label=base_model.label,
+            type=getattr(base_model, '__ps_type_name'),
+            data=base_model.model_dump()
+        )
 
     class Settings:
         name = "ps_documents"
@@ -51,6 +70,18 @@ class ConstraintDocument(BasePlannerSolverDocument):
     label: str
     data: Dict[str, Any] = {}
 
+    @staticmethod
+    def from_base_model(base_model: Constraint) -> "ConstraintDocument":
+        if not hasattr(base_model, 'label'):
+            raise TypeException("You must always define a label!")
+        if not hasattr(base_model, '__ps_type_name'):
+            raise TypeException("Make sure to cast to a type decorated with the module type")
+        return ConstraintDocument(
+            label=base_model.label,
+            type=getattr(base_model, '__ps_type_name'),
+            data=base_model.model_dump()
+        )
+
     class Settings:
         name = "ps_constraints"
         indexes = [
@@ -67,6 +98,18 @@ class ResourceDocument(BasePlannerSolverDocument):
     """
     label: str
     data: Dict[str, Any] = {}
+
+    @staticmethod
+    def from_base_model(base_model: Resource) -> "ResourceDocument":
+        if not hasattr(base_model, 'label'):
+            raise TypeException("You must always define a label!")
+        if not hasattr(base_model, '__ps_type_name'):
+            raise TypeException("Make sure to cast to a type decorated with the module type")
+        return ResourceDocument(
+            label=base_model.label,
+            type=getattr(base_model, '__ps_type_name'),
+            data=base_model.model_dump()
+        )
 
     class Settings:
         name = "ps_resources"
@@ -96,11 +139,20 @@ class ScenarioDocument(BasePlannerSolverDocument):
     def from_base_model(base_model: Scenario) -> "ScenarioDocument":
         if not hasattr(base_model, 'label'):
             raise TypeException("You must always define a label!")
+        if not hasattr(base_model, '__ps_type_name'):
+            raise TypeException("Make sure to cast to a type decorated with the module type")
         return ScenarioDocument(
             label=base_model.label,
+            type=getattr(base_model, '__ps_type_name'),
             data=base_model.model_dump()
         )
 
+    def to_base_model(self) -> Scenario:
+        type: Type[Scenario] = types_service.get(self.type)
+
+        data = self.data | { "uuid": self.uuid }
+
+        return type.model_validate(data)
 
     class Settings:
         name = "ps_scenarios"

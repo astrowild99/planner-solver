@@ -1,9 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
 from enum import Enum, IntEnum
+from uuid import UUID
 
 from ortools.sat.python.cp_model import CpModel, CpSolver, IntVar, IntervalVar
 from pydantic import BaseModel
+
+from planner_solver.exceptions.type_exceptions import TypeException
+from planner_solver.models.forms import BasePlannerSolverForm
 
 
 # this file contains all the really basic classes
@@ -57,6 +61,16 @@ class PlannerSolverBaseModel(BaseModel):
 
     label: str
     """this one is stored in every entity"""
+    uuid: str | None = None
+    """This is specified only when retrieved from the database"""
+
+    def to_form(self) -> BasePlannerSolverForm:
+        if not hasattr(self, '__ps_type_name'):
+            raise TypeException("Make sure to cast to a type decorated with the module type")
+        return BasePlannerSolverForm(
+            type=getattr(self, '__ps_type_name'),
+            data=self.model_dump()
+        )
 
     class Config:
         arbitrary_types_allowed = True

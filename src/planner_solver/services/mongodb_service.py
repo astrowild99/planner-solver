@@ -30,7 +30,7 @@ class MongodbService:
 
     async def __connect(self):
         client = AsyncMongoClient(
-            f"mongodb://{self.__connection.username}:{self.__connection.password}@{self.__connection.host}:{self.__connection.port}"
+            f"mongodb://{self.__connection.username}:{self.__connection.password}@{self.__connection.host}:{self.__connection.port}",
         )
 
         await init_beanie(
@@ -106,16 +106,17 @@ class MongodbService:
     ) -> ScenarioDocument:
         await self.__connect()
         if uuid is not None:
-            scenario_document = await self._get_scenario_document(uuid)
+            stored_scenario = await self._get_scenario_document(uuid)
 
             # todo handle update
-
-            return scenario_document
         else:
             scenario_document = ScenarioDocument.from_base_model(scenario)
 
-            await scenario_document.insert()
+            stored_scenario = await scenario_document.insert()
 
-            return scenario_document
+        logger.info(f"Retrieving the uuid {str(stored_scenario.uuid)}")
+        scenario.uuid = stored_scenario.uuid
+
+        return stored_scenario
 
     # endregion scenario
