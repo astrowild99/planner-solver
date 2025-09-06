@@ -3,8 +3,6 @@ from typing import TypeVar, Any, Dict, Optional, Generic
 from pydantic import BaseModel
 
 from planner_solver.containers.singletons import types_service
-from planner_solver.exceptions.type_exceptions import TypeException
-from planner_solver.models.base_models import PlannerSolverBaseModel
 
 T = TypeVar('T')
 
@@ -22,6 +20,8 @@ class BasePlannerSolverForm(BaseModel, Generic[T]):
         """
         checks the content of the form and creates the model
         """
-        model_type: T = types_service.get(self.type)
-        # model_type() # todo actually implement them
+        model_type: BaseModel = types_service.get(self.type)
+
+        return model_type.model_validate(self.data)
+
         return None

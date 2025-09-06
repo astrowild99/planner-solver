@@ -85,6 +85,8 @@ async def post_scenario(
 
     base_model = scenario_form.to_base_model()
 
+    await mongodb_service._store_scenario_document(base_model)
+
     return scenario
 
 

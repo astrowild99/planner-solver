@@ -49,11 +49,14 @@ class ResultTask(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-class PlannerSolverBaseModel:
+class PlannerSolverBaseModel(BaseModel):
     """
     wraps a planner solver entity for easy retrieval and type checking
     """
     __is_planner_solver_model = True
+
+    label: str
+    """this one is stored in every entity"""
 
     class Config:
         arbitrary_types_allowed = True
@@ -118,7 +121,8 @@ class Task(ABC, PlannerSolverBaseModel):
     by itself is not usable, as per every other type you need to
     provide a decorated type that can be manipulated
     """
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.__status = TaskStatus.CREATED
         self.cp_sat: None | CpSatTask = None
         self.result: None | ResultTask = None
@@ -245,7 +249,8 @@ class Scenario(ABC, PlannerSolverBaseModel):
     or the completion of a task
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.__status = ScenarioStatus.CREATED
 
     def get_scenario_status(self) -> ScenarioStatus:

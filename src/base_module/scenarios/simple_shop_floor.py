@@ -12,8 +12,8 @@ class SimpleShopFloorScenario(Scenario):
     __constraints: List[Constraint]
     __resources: List[Resource]
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.__tasks = []
         self.__constraints = []
         self.__resources = []

@@ -7,6 +7,10 @@ from uuid import UUID, uuid4
 
 from pydantic import Field
 
+from planner_solver.exceptions.type_exceptions import TypeException
+from planner_solver.models.base_models import Scenario
+
+
 class BasePlannerSolverDocument(Document):
     """
     used only to store and retrieve task data
@@ -82,9 +86,21 @@ class ScenarioDocument(BasePlannerSolverDocument):
     label: str
 
     # here the data are hard coded as links in beanie
-    tasks: Optional[List[Link[TaskDocument]]]
-    constraints: Optional[List[Link[ConstraintDocument]]]
-    resources: Optional[List[Link[ResourceDocument]]]
+    tasks: Optional[List[Link[TaskDocument]]] = None
+    constraints: Optional[List[Link[ConstraintDocument]]] = None
+    resources: Optional[List[Link[ResourceDocument]]] = None
+
+    data: Dict[str, Any] = {}
+
+    @staticmethod
+    def from_base_model(base_model: Scenario) -> "ScenarioDocument":
+        if not hasattr(base_model, 'label'):
+            raise TypeException("You must always define a label!")
+        return ScenarioDocument(
+            label=base_model.label,
+            data=base_model.model_dump()
+        )
+
 
     class Settings:
         name = "ps_scenarios"

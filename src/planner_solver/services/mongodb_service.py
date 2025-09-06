@@ -99,13 +99,23 @@ class MongodbService:
             ScenarioDocument.uuid == uuid
         ).first_or_none()
 
-    async def _store_scenario_document(self, scenario: Scenario, uuid: Optional[str] = None):
+    async def _store_scenario_document(
+            self,
+            scenario: Scenario,
+            uuid: Optional[str] = None
+    ) -> ScenarioDocument:
         await self.__connect()
         if uuid is not None:
-            scenario_document = self._get_scenario_document(uuid)
-        else:
-            scenario_document = ScenarioDocument(
+            scenario_document = await self._get_scenario_document(uuid)
 
-            )
+            # todo handle update
+
+            return scenario_document
+        else:
+            scenario_document = ScenarioDocument.from_base_model(scenario)
+
+            await scenario_document.insert()
+
+            return scenario_document
 
     # endregion scenario
