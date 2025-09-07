@@ -59,7 +59,7 @@ class PlannerSolverBaseModel(BaseModel):
     """
     __is_planner_solver_model = True
 
-    label: str
+    label: str | None = None
     """this one is stored in every entity"""
     uuid: str | None = None
     """This is specified only when retrieved from the database"""
@@ -72,8 +72,10 @@ class PlannerSolverBaseModel(BaseModel):
             data=self.model_dump()
         )
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = {
+        "arbitrary_types_allowed": True,
+        "extra": "allow"
+    }
 
 class Constraint(ABC, PlannerSolverBaseModel):
     """

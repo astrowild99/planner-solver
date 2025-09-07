@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 import uuid
 
 from planner_solver.decorators.task_type import TaskType, TaskParameter
@@ -8,10 +8,10 @@ from planner_solver.services.worker_service import WrappedModel
 
 @TaskType(type_name="fixed_duration_task")
 class FixedDurationTask(Task):
-    label = TaskParameter(
+    label: Optional[str] = TaskParameter(
         param_type=str
     )
-    duration = TaskParameter(
+    duration: Optional[int] = TaskParameter(
         param_type=int
     )
 

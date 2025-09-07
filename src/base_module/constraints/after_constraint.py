@@ -1,3 +1,5 @@
+from typing import Optional
+
 from ortools.sat.python.cp_model import CpModel
 
 from planner_solver.decorators.constraint_type import ConstraintType, ConstraintParameter
@@ -7,7 +9,7 @@ from planner_solver.models.base_models import Constraint, Task
 @ConstraintType(type_name="after_constraint")
 class AfterConstraint(Constraint):
 
-    task = ConstraintParameter(
+    task: Optional[Task] = ConstraintParameter(
         param_type=Task,
     )
 

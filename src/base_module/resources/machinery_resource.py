@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from ortools.sat.python.cp_model import CpModel
 
@@ -8,13 +8,14 @@ from planner_solver.models.base_models import Resource, Task
 
 @ResourceType(type_name="machinery_resource")
 class MachineryResource(Resource):
-    machine_name = ResourceParameter(
+    machine_name: Optional[str] = ResourceParameter(
         param_type=str
     )
 
     __attached_tasks: List[Task]
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.__attached_tasks = []
 
     def prepare_resource(self, model: CpModel) -> None:
