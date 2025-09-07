@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional
 
 from beanie import init_beanie
+from beanie.exceptions import DocumentNotFound
 from pymongo import AsyncMongoClient
 
 from planner_solver.config.models import MongodbConfig
@@ -47,11 +48,11 @@ class MongodbService:
 
     # region task
 
-    async def _get_task_documents(self) -> List[TaskDocument]:
+    async def get_task_documents(self) -> List[TaskDocument]:
         await self.__connect()
         return await TaskDocument.find_all().to_list()
 
-    async def _get_task_document(self, uuid: str) -> TaskDocument | None:
+    async def get_task_document(self, uuid: str) -> TaskDocument | None:
         await self.__connect()
         return await TaskDocument.find(
             TaskDocument.uuid == uuid
@@ -61,11 +62,11 @@ class MongodbService:
 
     # region constraint
 
-    async def _get_constraint_documents(self) -> List[ConstraintDocument]:
+    async def get_constraint_documents(self) -> List[ConstraintDocument]:
         await self.__connect()
         return await ConstraintDocument.find_all().to_list()
 
-    async def _get_constraint_document(self, uuid: str) -> ConstraintDocument | None:
+    async def get_constraint_document(self, uuid: str) -> ConstraintDocument | None:
         await self.__connect()
         return await ConstraintDocument.find(
             ConstraintDocument.uuid == uuid
@@ -75,11 +76,11 @@ class MongodbService:
 
     # region resource
 
-    async def _get_resource_documents(self) -> List[ResourceDocument]:
+    async def get_resource_documents(self) -> List[ResourceDocument]:
         await self.__connect()
         return await ResourceDocument.find_all().to_list()
 
-    async def _get_resource_document(self, uuid: str) -> ResourceDocument | None:
+    async def get_resource_document(self, uuid: str) -> ResourceDocument | None:
         await self.__connect()
         return await ResourceDocument.find(
             ResourceDocument.uuid == uuid
@@ -89,24 +90,24 @@ class MongodbService:
 
     # region scenario
 
-    async def _get_scenario_documents(self) -> List[ScenarioDocument]:
+    async def get_scenario_documents(self) -> List[ScenarioDocument]:
         await self.__connect()
         return await ScenarioDocument.find_all().to_list()
 
-    async def _get_scenario_document(self, uuid: str) -> ScenarioDocument:
+    async def get_scenario_document(self, uuid: str) -> ScenarioDocument:
         await self.__connect()
         return await ScenarioDocument.find(
             ScenarioDocument.uuid == uuid
         ).first_or_none()
 
-    async def _store_scenario_document(
+    async def store_scenario_document(
             self,
             scenario: Scenario,
             uuid: Optional[str] = None
     ) -> ScenarioDocument:
         await self.__connect()
         if uuid is not None:
-            stored_scenario = await self._get_scenario_document(uuid)
+            stored_scenario = await self.get_scenario_document(uuid)
 
             # todo handle update
         else:
@@ -118,5 +119,21 @@ class MongodbService:
         scenario.uuid = stored_scenario.uuid
 
         return stored_scenario
+
+    async def delete_scenario_document(
+            self,
+            uuid: str,
+    ):
+        await self.__connect()
+
+        found = await self.get_scenario_document(uuid)
+
+        if not found:
+            raise DocumentNotFound(f"Scenario not found for uuid {uuid}")
+
+        await found.delete()
+
+        return found
+
 
     # endregion scenario

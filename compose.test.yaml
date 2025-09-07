@@ -1,3 +1,5 @@
+name: planner-solver-test
+
 services:
   planner-solver:
     build:

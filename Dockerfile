@@ -24,6 +24,9 @@ CMD "planner-solver"
 
 FROM dev AS test
 
+COPY --chmod=755 docker/entrypoint-test.sh "/usr/src/app/entrypoint.sh"
+ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
+
 COPY tests tests
 
 CMD echo "Ready" && sleep infinity

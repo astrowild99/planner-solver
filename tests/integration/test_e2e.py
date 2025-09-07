@@ -40,6 +40,34 @@ async def test_scenario_creation(
     })
 
     assert response.status_code == 200
-    # todo finish here
+    content = response.json()
+    assert 'type' in content
+    assert 'data' in content
+    assert content['type'] == 'simple_shop_floor'
+    assert content['data']['label'] == 'lorem ipsum dolor sit amet'
+    assert type(content['data']['uuid']) is str
+
+    uuid = content['data']['uuid']
+
+    # I retrieve it back
+    response = client.get(f"/scenario/{uuid}")
+    assert response.status_code == 200
+    content = response.json()
+
+    assert 'type' in content
+    assert 'data' in content
+    assert content['type'] == 'simple_shop_floor'
+    assert content['data']['label'] == 'lorem ipsum dolor sit amet'
+    assert type(content['data']['uuid']) is str
+    assert uuid == content['data']['uuid']
+
+    # Delete it
+    response = client.delete(f"/scenario/{uuid}")
+    assert response.status_code == 200
+
+    # And can't retrieve it anymore
+    response = client.get(f"/scenario/{uuid}")
+    assert response.status_code == 404
+
 
 # endregion scenarios

@@ -11,7 +11,7 @@ import logging
 from typing import cast
 
 from dependency_injector.wiring import inject
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from planner_solver.containers import ApplicationContainer
 from planner_solver.models.base_models import Scenario
@@ -70,11 +70,10 @@ def health_check() -> HealthCheckResponse:
 async def get_scenario(
         uuid_scenario: str
 ):
-    found = await mongodb_service._get_scenario_document(uuid_scenario)
+    found = await mongodb_service.get_scenario_document(uuid_scenario)
 
     if not found:
-        raise Exception("scenario not found")
-        # todo handle 404
+        raise HTTPException(status_code=404, detail="Scenario not found")
     return found.to_base_model().to_form()
 
 @inject
@@ -90,20 +89,15 @@ async def post_scenario(
 
     base_model = scenario.to_base_model()
 
-    await mongodb_service._store_scenario_document(base_model)
+    await mongodb_service.store_scenario_document(base_model)
 
     return base_model.to_form()
-
-@app.put('/scenario/{uuid_scenario}')
-async def put_scenario(
-        uuid_scenario: str
-):
-    pass
 
 @app.delete('/scenario/{uuid_scenario}')
 async def delete_scenario(
         uuid_scenario: str
 ):
-    pass
+    deleted = await mongodb_service.delete_scenario_document(uuid_scenario)
 
+    return deleted.to_base_model().to_form()
 # endregion scenario

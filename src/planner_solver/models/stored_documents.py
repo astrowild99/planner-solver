@@ -4,8 +4,8 @@ from datetime import datetime
 from typing import Optional, Any, Dict, List, Type, TYPE_CHECKING
 
 import pymongo
-from beanie import Document, Link
-from uuid import UUID, uuid4
+from beanie import Document, Link, before_event, Replace, Insert
+from uuid import uuid4
 
 from pydantic import Field
 
@@ -31,7 +31,12 @@ class BasePlannerSolverDocument(Document):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
+    @before_event(Replace, Insert)
+    def update_updated_at(self):
+        self.updated_at = datetime.now()
+
     is_deleted: bool = Field(default=False)
+    """Beware! soft delete is not implemented as of 20250907"""
 
 class TaskDocument(BasePlannerSolverDocument):
     """
