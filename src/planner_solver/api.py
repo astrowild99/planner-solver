@@ -14,7 +14,7 @@ from dependency_injector.wiring import inject
 from fastapi import FastAPI, HTTPException
 
 from planner_solver.containers import ApplicationContainer
-from planner_solver.models.base_models import Scenario
+from planner_solver.models.base_models import Scenario, Resource
 from planner_solver.models.forms import BasePlannerSolverForm
 
 logger = logging.getLogger(__name__)
@@ -76,7 +76,6 @@ async def get_scenario(
         raise HTTPException(status_code=404, detail="Scenario not found")
     return found.to_base_model().to_form()
 
-@inject
 @app.post('/scenario')
 async def post_scenario(
         scenario_form: BasePlannerSolverForm,
@@ -85,7 +84,6 @@ async def post_scenario(
     creates the scenario
     """
     scenario = cast(BasePlannerSolverForm[Scenario], scenario_form)
-    logger.info(f"Created scenario with a basic data: {json.dumps(scenario_form.data)}")
 
     base_model = scenario.to_base_model()
 
@@ -100,4 +98,54 @@ async def delete_scenario(
     deleted = await mongodb_service.delete_scenario_document(uuid_scenario)
 
     return deleted.to_base_model().to_form()
+
 # endregion scenario
+
+# region resource
+
+@app.get('/scenario/{uuid_scenario}/resource')
+async def get_scenario_resources(
+        uuid_scenario: str
+):
+    found = await mongodb_service.get_resource_documents(uuid_scenario=uuid_scenario)
+
+    return [f.to_base_model().to_form() for f in found]
+
+@app.get('/scenario/{uuid_scenario}/resource/{uuid}')
+async def get_scenario_resource(
+        uuid_scenario: str,
+        uuid: str
+):
+    found = await mongodb_service.get_resource_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid
+    )
+
+    if not found:
+        raise HTTPException(status_code=404, detail='scenario resource not found')
+
+    return found.to_base_model().to_form()
+
+@app.post('/scenario/{uuid_scenario}/resource')
+async def post_scenario_resource(
+        uuid_scenario: str,
+        resource_form: BasePlannerSolverForm,
+) -> BasePlannerSolverForm[Resource]:
+    scenario_document = await mongodb_service.get_scenario_document(uuid_scenario)
+
+    if not scenario_document:
+        raise HTTPException(status_code=404, detail='scenario not found')
+
+    resource = cast(BasePlannerSolverForm[Resource], resource_form)
+
+    base_model = resource.to_base_model()
+
+    await mongodb_service.store_resource_document(
+        uuid_scenario=uuid_scenario,
+        resource=base_model
+    )
+
+    return base_model.to_form()
+
+
+# endregion resource

@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
 from enum import Enum, IntEnum
-from uuid import UUID
 
 from ortools.sat.python.cp_model import CpModel, CpSolver, IntVar, IntervalVar
 from pydantic import BaseModel

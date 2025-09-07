@@ -1,12 +1,12 @@
 import logging
 from typing import List, Optional
 
-from beanie import init_beanie
+from beanie import init_beanie, Link
 from beanie.exceptions import DocumentNotFound
 from pymongo import AsyncMongoClient
 
 from planner_solver.config.models import MongodbConfig
-from planner_solver.models.base_models import Scenario
+from planner_solver.models.base_models import Scenario, Resource
 from planner_solver.models.stored_documents import TaskDocument, ConstraintDocument, ResourceDocument, ScenarioDocument
 from planner_solver.services.types_service import TypesService
 
@@ -76,15 +76,56 @@ class MongodbService:
 
     # region resource
 
-    async def get_resource_documents(self) -> List[ResourceDocument]:
+    async def get_resource_documents(
+            self,
+            uuid_scenario: str,
+    ) -> List[ResourceDocument]:
         await self.__connect()
-        return await ResourceDocument.find_all().to_list()
 
-    async def get_resource_document(self, uuid: str) -> ResourceDocument | None:
-        await self.__connect()
+        scenario = await self.get_scenario_document(uuid_scenario)
+
+        if not scenario:
+            return []
+
         return await ResourceDocument.find(
+            ResourceDocument.scenario.id == scenario.id
+        ).to_list()
+
+    async def get_resource_document(
+            self,
+            uuid_scenario: str,
+            uuid: str
+    ) -> ResourceDocument | None:
+        await self.__connect()
+
+        scenario = await self.get_scenario_document(uuid_scenario)
+
+        return await ResourceDocument.find(
+            ResourceDocument.scenario == scenario,
             ResourceDocument.uuid == uuid
         ).first_or_none()
+
+    async def store_resource_document(
+            self,
+            uuid_scenario,
+            resource: Resource,
+            uuid: Optional[str] = None
+    ):
+        await self.__connect()
+
+        scenario = await self.get_scenario_document(uuid_scenario)
+
+        if uuid is not None:
+            raise Exception("Update not yet implemented")
+        else:
+            resource_document = ResourceDocument.from_base_model(resource)
+            resource_document.scenario = scenario
+
+            stored_resource = await resource_document.insert()
+
+        resource.uuid = stored_resource.uuid
+
+        return stored_resource
 
     # endregion resource
 
@@ -108,7 +149,7 @@ class MongodbService:
         await self.__connect()
         if uuid is not None:
             stored_scenario = await self.get_scenario_document(uuid)
-
+            raise Exception("Update not yet implemented")
             # todo handle update
         else:
             scenario_document = ScenarioDocument.from_base_model(scenario)

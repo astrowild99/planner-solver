@@ -46,6 +46,8 @@ class TaskDocument(BasePlannerSolverDocument):
     label: str
     data: Dict[str, Any] = {}
 
+    scenario: Optional[Link[ScenarioDocument]] = None
+
     @staticmethod
     def from_base_model(base_model: Task) -> "TaskDocument":
         if not hasattr(base_model, 'label'):
@@ -57,6 +59,13 @@ class TaskDocument(BasePlannerSolverDocument):
             type=getattr(base_model, '__ps_type_name'),
             data=base_model.model_dump()
         )
+
+    def to_base_model(self) -> Task:
+        type: Type[Task] = types_service.get(self.type)
+
+        data = self.data | { "uuid": self.uuid }
+
+        return type.model_validate(data)
 
     class Settings:
         name = "ps_documents"
@@ -75,6 +84,8 @@ class ConstraintDocument(BasePlannerSolverDocument):
     label: str
     data: Dict[str, Any] = {}
 
+    scenario: Optional[Link[ScenarioDocument]] = None
+
     @staticmethod
     def from_base_model(base_model: Constraint) -> "ConstraintDocument":
         if not hasattr(base_model, 'label'):
@@ -86,6 +97,13 @@ class ConstraintDocument(BasePlannerSolverDocument):
             type=getattr(base_model, '__ps_type_name'),
             data=base_model.model_dump()
         )
+
+    def to_base_model(self) -> Constraint:
+        type: Type[Constraint] = types_service.get(self.type)
+
+        data = self.data | { "uuid": self.uuid }
+
+        return type.model_validate(data)
 
     class Settings:
         name = "ps_constraints"
@@ -104,6 +122,8 @@ class ResourceDocument(BasePlannerSolverDocument):
     label: str
     data: Dict[str, Any] = {}
 
+    scenario: Optional[Link[ScenarioDocument]] = None
+
     @staticmethod
     def from_base_model(base_model: Resource) -> "ResourceDocument":
         if not hasattr(base_model, 'label'):
@@ -113,8 +133,15 @@ class ResourceDocument(BasePlannerSolverDocument):
         return ResourceDocument(
             label=base_model.label,
             type=getattr(base_model, '__ps_type_name'),
-            data=base_model.model_dump()
+            data=base_model.model_dump(),
         )
+
+    def to_base_model(self) -> Resource:
+        type: Type[Resource] = types_service.get(self.type)
+
+        data = self.data | { "uuid": self.uuid }
+
+        return type.model_validate(data)
 
     class Settings:
         name = "ps_resources"
@@ -132,11 +159,6 @@ class ScenarioDocument(BasePlannerSolverDocument):
     between the solver and the outside world
     """
     label: str
-
-    # here the data are hard coded as links in beanie
-    tasks: Optional[List[Link[TaskDocument]]] = None
-    constraints: Optional[List[Link[ConstraintDocument]]] = None
-    resources: Optional[List[Link[ResourceDocument]]] = None
 
     data: Dict[str, Any] = {}
 

@@ -11,8 +11,6 @@ class LoggingConfig(YamlBaseSettings):
     """
     To set the logging behavior
     """
-    print("damn it damn damn damn")
-    print(os.getcwd())
 
     model_config = SettingsConfigDict(
         yaml_file="configs/logging.yaml",
