@@ -26,6 +26,7 @@ class MongodbService:
         self.__config = config
         self.__connection = config.connection
         self.__types_service = types_service
+        self.__beanie_initialized = False
         logger.info("service loaded")
         logger.debug("host: " + str(config.connection.host) + ":" + str(config.connection.port))
 
@@ -34,17 +35,19 @@ class MongodbService:
             f"mongodb://{self.__connection.username}:{self.__connection.password}@{self.__connection.host}:{self.__connection.port}",
         )
 
-        await init_beanie(
-            database=client.get_database(
-                name=self.__connection.database
-            ),
-            document_models=[
-                TaskDocument,
-                ConstraintDocument,
-                ResourceDocument,
-                ScenarioDocument,
-            ]
-        )
+        if not self.__beanie_initialized:
+            await init_beanie(
+                database=client.get_database(
+                    name=self.__connection.database
+                ),
+                document_models=[
+                    TaskDocument,
+                    ConstraintDocument,
+                    ResourceDocument,
+                    ScenarioDocument,
+                ]
+            )
+            self.__beanie_initialized = True
 
     # region task
 
@@ -82,13 +85,9 @@ class MongodbService:
     ) -> List[ResourceDocument]:
         await self.__connect()
 
-        scenario = await self.get_scenario_document(uuid_scenario)
-
-        if not scenario:
-            return []
-
         return await ResourceDocument.find(
-            ResourceDocument.scenario.id == scenario.id
+            ResourceDocument.scenario.uuid == uuid_scenario,
+            fetch_links=True
         ).to_list()
 
     async def get_resource_document(

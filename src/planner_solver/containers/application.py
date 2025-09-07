@@ -20,7 +20,6 @@ def configure_logging(config: LoggingConfig) -> None:
     )
 
 class ApplicationContainer(containers.DeclarativeContainer):
-    
     config = providers.Configuration()
 
     # region config

@@ -6,11 +6,9 @@ messages exchanged via the rabbitmq server
 """
 import dataclasses
 import datetime
-import json
 import logging
 from typing import cast
 
-from dependency_injector.wiring import inject
 from fastapi import FastAPI, HTTPException
 
 from planner_solver.containers import ApplicationContainer
@@ -65,6 +63,12 @@ def health_check() -> HealthCheckResponse:
 # endregion status
 
 # region scenario
+
+@app.get('/scenario')
+async def get_scenarios():
+    found = await mongodb_service.get_scenario_documents()
+
+    return [f.to_base_model().to_form() for f in found]
 
 @app.get('/scenario/{uuid_scenario}')
 async def get_scenario(

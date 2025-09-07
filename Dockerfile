@@ -24,6 +24,8 @@ CMD "planner-solver"
 
 FROM dev AS test
 
+ENV PYTHONBUFFERED=1
+
 COPY --chmod=755 docker/entrypoint-test.sh "/usr/src/app/entrypoint.sh"
 ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
 
