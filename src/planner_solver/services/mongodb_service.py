@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import List, Optional
 
@@ -11,6 +12,47 @@ from planner_solver.models.stored_documents import TaskDocument, ConstraintDocum
 from planner_solver.services.types_service import TypesService
 
 logger = logging.getLogger(__name__)
+
+MODELS = [
+    TaskDocument,
+    ConstraintDocument,
+    ResourceDocument,
+    ScenarioDocument,
+]
+
+class MongoConnectionFactory:
+    def __init__(self):
+        self._clients = {}
+        self._beanie_initialized_loops = set()
+
+    async def get_client_and_init_beanie(self, connection_config):
+        loop = asyncio.get_running_loop()
+        loop_id = id(loop)
+
+        # Create client if it doesn't exist for this loop
+        if loop_id not in self._clients:
+            client = AsyncMongoClient(
+                f"mongodb://{connection_config.username}:{connection_config.password}@{connection_config.host}:{connection_config.port}",
+            )
+            self._clients[loop_id] = client
+        else:
+            client = self._clients[loop_id]
+
+        # Initialize Beanie if not done for this loop
+        if loop_id not in self._beanie_initialized_loops:
+            await init_beanie(
+                database=client.get_database(name=connection_config.database),
+                document_models=MODELS,
+            )
+            self._beanie_initialized_loops.add(loop_id)
+
+        return client
+
+    def close_all(self):
+        for client in self._clients.values():
+            client.close()
+        self._clients.clear()
+        self._beanie_initialized_loops.clear()
 
 
 class MongodbService:
@@ -27,27 +69,22 @@ class MongodbService:
         self.__connection = config.connection
         self.__types_service = types_service
         self.__beanie_initialized = False
+        self.__connection_factory = MongoConnectionFactory()
         logger.info("service loaded")
         logger.debug("host: " + str(config.connection.host) + ":" + str(config.connection.port))
 
     async def __connect(self):
-        client = AsyncMongoClient(
-            f"mongodb://{self.__connection.username}:{self.__connection.password}@{self.__connection.host}:{self.__connection.port}",
+        client = await self.__connection_factory.get_client_and_init_beanie(
+            self.__connection
         )
+        return client  # Return client if you need it elsewhere
 
-        if not self.__beanie_initialized:
-            await init_beanie(
-                database=client.get_database(
-                    name=self.__connection.database
-                ),
-                document_models=[
-                    TaskDocument,
-                    ConstraintDocument,
-                    ResourceDocument,
-                    ScenarioDocument,
-                ]
-            )
-            self.__beanie_initialized = True
+    async def clear_all_collections(self):
+        await self.__connect()
+
+        for x in MODELS:
+            print("Clearing model")
+            await x.delete_all()
 
     # region task
 
@@ -65,6 +102,10 @@ class MongodbService:
 
     # region constraint
 
+    async def get_all_constraint_documents(self) -> List[ConstraintDocument]:
+        await self.__connect()
+        return await ConstraintDocument.find_all().to_list()
+
     async def get_constraint_documents(self) -> List[ConstraintDocument]:
         await self.__connect()
         return await ConstraintDocument.find_all().to_list()
@@ -78,6 +119,13 @@ class MongodbService:
     # endregion constraint
 
     # region resource
+
+    async def get_all_resource_documents(
+            self,
+    ) -> List[ResourceDocument]:
+        await self.__connect()
+
+        return await ResourceDocument.find_all().to_list()
 
     async def get_resource_documents(
             self,
@@ -130,6 +178,10 @@ class MongodbService:
 
     # region scenario
 
+    async def get_all_scenario_documents(self) -> List[ScenarioDocument]:
+        await self.__connect()
+        return await ScenarioDocument.find_all().to_list()
+
     async def get_scenario_documents(self) -> List[ScenarioDocument]:
         await self.__connect()
         return await ScenarioDocument.find_all().to_list()
@@ -174,6 +226,5 @@ class MongodbService:
         await found.delete()
 
         return found
-
 
     # endregion scenario
