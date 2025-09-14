@@ -7,6 +7,7 @@ FROM python_upstream AS dev
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
+RUN sed -i '/^-e /d' requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chmod=755 docker/entrypoint-dev.sh "entrypoint.sh"
