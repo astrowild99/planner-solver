@@ -3,6 +3,7 @@ annotated-types==0.7.0
 anyio==4.10.0
 attrs==25.3.0
 beanie==2.0.0
+-e git+ssh://git@github.com/astrowild99/bunnet.git@d771666fe4e19c921e75c0d1bb3762cc4305176e#egg=bunnet&subdirectory=../../../vendor/bunnet
 certifi==2025.8.3
 click==8.2.1
 contourpy==1.3.2
@@ -36,6 +37,7 @@ packaging==25.0
 pandas==2.3.1
 pika==1.3.2
 pillow==11.3.0
+-e git+https://github.com/astrowild99/planner-solver.git@0783516383c422174d72a3a515e25dcdb8dad083#egg=planner_solver
 pluggy==1.6.0
 protobuf==6.31.1
 pydantic==2.11.7
@@ -66,6 +68,7 @@ shellingham==1.5.4
 six==1.17.0
 sniffio==1.3.1
 starlette==0.47.2
+toml==0.10.2
 typer==0.17.3
 typing-inspection==0.4.1
 typing_extensions==4.14.1

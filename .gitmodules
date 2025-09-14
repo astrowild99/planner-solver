@@ -1,0 +1,3 @@
+[submodule "vendor/bunnet"]
+	path = vendor/bunnet
+	url = git@github.com:astrowild99/bunnet.git

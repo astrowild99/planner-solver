@@ -7,7 +7,11 @@ FROM python_upstream AS dev
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
+RUN sed -i '/^-e /d' requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+
+COPY vendor vendor
+RUN pip install -e vendor/bunnet
 
 COPY --chmod=755 docker/entrypoint-dev.sh "entrypoint.sh"
 ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
