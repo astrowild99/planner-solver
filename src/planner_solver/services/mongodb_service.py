@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import List, Optional
+from typing import List, Optional, Union, get_type_hints
 
 from beanie import init_beanie, Link
 from beanie.exceptions import DocumentNotFound
@@ -10,6 +10,7 @@ from planner_solver.config.models import MongodbConfig
 from planner_solver.models.base_models import Scenario, Resource, Task, Constraint
 from planner_solver.models.stored_documents import TaskDocument, ConstraintDocument, ResourceDocument, ScenarioDocument
 from planner_solver.services.types_service import TypesService
+from planner_solver.decorators.parameters import Parameter
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +85,101 @@ class MongodbService:
 
         for x in MODELS:
             await x.delete_all()
+
+    async def hydrate_parameter_links(
+            self,
+            base_model: Union[Task, Constraint, Resource, Scenario],
+            uuid_scenario: Optional[str] = None
+    ) -> Union[Task, Constraint, Resource, Scenario]:
+        """
+        Hydrates Parameter links in a base model by fetching referenced documents from MongoDB.
+
+        Args:
+            base_model: The model to hydrate
+            uuid_scenario: Scenario UUID for scoped lookups (optional)
+
+        Returns:
+            The same model with Parameter links resolved to actual objects
+        """
+        await self.__connect()
+
+        # Get all Parameter attributes from the model class
+        for attr_name in dir(base_model.__class__):
+            attr = getattr(base_model.__class__, attr_name)
+
+            if isinstance(attr, Parameter):
+                # Get the current value (should be a UUID string or None)
+                current_value = getattr(base_model, attr_name)
+
+                if current_value is None:
+                    continue
+
+                # If it's already hydrated (an object, not a string), skip
+                if not isinstance(current_value, str):
+                    continue
+
+                # Determine what type of document to fetch based on param_type
+                hydrated_value = await self._resolve_parameter_reference(
+                    current_value,
+                    attr.param_type,
+                    uuid_scenario
+                )
+
+                if hydrated_value:
+                    setattr(base_model, attr_name, hydrated_value)
+
+        return base_model
+
+    async def _resolve_parameter_reference(
+            self,
+            uuid_value: str,
+            param_type: type,
+            uuid_scenario: Optional[str] = None
+    ) -> Optional[Union[Task, Constraint, Resource, Scenario]]:
+        """
+        Resolves a single parameter reference by UUID.
+
+        Args:
+            uuid_value: UUID string to resolve
+            param_type: Expected type of the referenced object
+            uuid_scenario: Scenario UUID for scoped lookups (optional)
+
+        Returns:
+            The resolved object or None if not found
+        """
+        try:
+            # Determine which document type to query based on param_type
+            if issubclass(param_type, Task):
+                if uuid_scenario:
+                    doc = await self.get_task_document(uuid_scenario, uuid_value)
+                else:
+                    # Fallback: search all task documents
+                    doc = await TaskDocument.find(TaskDocument.uuid == uuid_value).first_or_none()
+                return doc.to_base_model() if doc else None
+
+            elif issubclass(param_type, Constraint):
+                if uuid_scenario:
+                    doc = await self.get_constraint_document(uuid_scenario, uuid_value)
+                else:
+                    doc = await self.get_constraint_document_by_uuid(uuid_value)
+                return doc.to_base_model() if doc else None
+
+            elif issubclass(param_type, Resource):
+                if uuid_scenario:
+                    doc = await self.get_resource_document(uuid_scenario, uuid_value)
+                else:
+                    # Fallback: search all resource documents
+                    doc = await ResourceDocument.find(ResourceDocument.uuid == uuid_value).first_or_none()
+                return doc.to_base_model() if doc else None
+
+            elif issubclass(param_type, Scenario):
+                doc = await self.get_scenario_document(uuid_value)
+                return doc.to_base_model() if doc else None
+
+        except Exception as e:
+            logger.warning(f"Failed to resolve parameter reference {uuid_value} of type {param_type}: {e}")
+
+        return None
 
     # region task
 

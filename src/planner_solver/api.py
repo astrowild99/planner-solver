@@ -144,6 +144,9 @@ async def post_scenario_resource(
 
     base_model = resource.to_base_model()
 
+    # Hydrate parameter links before storing
+    base_model = await mongodb_service.hydrate_parameter_links(base_model, uuid_scenario)
+
     await mongodb_service.store_resource_document(
         uuid_scenario=uuid_scenario,
         resource=base_model
@@ -220,6 +223,9 @@ async def post_scenario_task(
 
     base_model = task.to_base_model()
 
+    # Hydrate parameter links before storing
+    base_model = await mongodb_service.hydrate_parameter_links(base_model, uuid_scenario)
+
     await mongodb_service.store_task_document(
         uuid_scenario=uuid_scenario,
         task=base_model,
@@ -294,6 +300,9 @@ async def post_scenario_constraint(
     constraint = cast(BasePlannerSolverForm[Constraint], constraint_form)
 
     base_model = constraint.to_base_model()
+
+    # Hydrate parameter links before storing
+    base_model = await mongodb_service.hydrate_parameter_links(base_model, uuid_scenario)
 
     await mongodb_service.store_constraint_document(
         uuid_scenario=uuid_scenario,

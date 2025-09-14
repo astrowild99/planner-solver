@@ -34,6 +34,26 @@ class Parameter(ABC):
 
         setattr(instance, self.private_name, value)
 
+    def resolve_value(self, instance):
+        """
+        Resolves the parameter value. If it's a string UUID, it should be hydrated.
+        If it's already an object, return it directly.
+        This method is used by constraints and other components to get the resolved value.
+        """
+        value = getattr(instance, self.private_name, None)
+
+        if value is None:
+            return None
+
+        # If it's already an object (hydrated), return it
+        if not isinstance(value, str):
+            return value
+
+        # If it's a string UUID, it should have been hydrated by mongodb_service.hydrate_parameter_links()
+        # If we reach here with a string, it means hydration wasn't called
+        raise ValueError(f"Parameter '{self.name}' contains unresolved UUID '{value}'. "
+                        f"Call mongodb_service.hydrate_parameter_links() first.")
+
     # region type validation
 
     def _is_valid_type(self, value) -> bool:
