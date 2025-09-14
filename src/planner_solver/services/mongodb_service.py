@@ -1,8 +1,8 @@
 import asyncio
 import logging
-from typing import List, Optional, Union, get_type_hints, Literal
+from typing import List, Optional, Union, Literal
 
-from beanie import init_beanie, Link
+from beanie import init_beanie
 from beanie.exceptions import DocumentNotFound
 from pymongo import AsyncMongoClient
 
@@ -10,7 +10,6 @@ from planner_solver.config.models import MongodbConfig
 from planner_solver.models.base_models import Scenario, Resource, Task, Constraint
 from planner_solver.models.stored_documents import TaskDocument, ConstraintDocument, ResourceDocument, ScenarioDocument
 from planner_solver.services.types_service import TypesService
-from planner_solver.decorators.parameters import Parameter
 
 logger = logging.getLogger(__name__)
 

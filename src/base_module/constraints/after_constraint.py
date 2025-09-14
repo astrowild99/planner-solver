@@ -1,16 +1,18 @@
 from typing import Optional
 
+from beanie import Link
 from ortools.sat.python.cp_model import CpModel
 
 from planner_solver.decorators.constraint_type import ConstraintType, ConstraintParameter
 from planner_solver.exceptions.type_exceptions import ConstraintAttachTypeException
 from planner_solver.models.base_models import Constraint, Task
+from planner_solver.models.stored_documents import TaskDocument
 
 
 @ConstraintType(type_name="after_constraint", attachable_to=['task'])
 class AfterConstraint(Constraint):
 
-    task: Optional[Task | str] = ConstraintParameter(
+    task: Link[TaskDocument] = ConstraintParameter(
         param_type=Task,
         link='task'
     )
@@ -31,11 +33,11 @@ class AfterConstraintScenario(Constraint):
     The scenario-wide version of the after constraint
     """
 
-    task_before: Optional[Task | str] = ConstraintParameter(
+    task_before: Link[TaskDocument] = ConstraintParameter(
         param_type=Task,
         link='task'
     )
-    task_after: Optional[Task | str] = ConstraintParameter(
+    task_after: Link[TaskDocument] = ConstraintParameter(
         param_type=Task,
         link='task'
     )
