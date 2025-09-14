@@ -1,5 +1,6 @@
 from abc import ABC
-from typing import Type, get_origin, Union, get_args
+from typing import Type, get_origin, Union, get_args, Optional, Literal
+
 
 class Parameter(ABC):
     """
@@ -9,12 +10,14 @@ class Parameter(ABC):
     def __init__(
             self,
             param_type: Type,
+            link: Optional[Literal['task', 'resource', 'constraint']] = None,
             extra_name: str | None = None
     ):
         self.param_type = param_type
         self.name = None
         self.extra_name = extra_name
         self.private_name = None
+        self.link = link
 
     def __set_name__(self, owner, name):
         """
@@ -24,6 +27,8 @@ class Parameter(ABC):
         if self.extra_name is None:
             self.extra_name = name
         self.private_name = f"_{name}"
+        if self.link is not None:
+            setattr(owner, f"_ps_link_{name}", self.link)
 
     def __get__(self, instance, owner):
         if instance is None:

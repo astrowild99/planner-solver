@@ -10,8 +10,6 @@ if os.getenv('ENABLE_DEBUG', 'false').lower() == 'true':
         hosts_to_try = [
             'host.docker.internal',  # Docker Desktop
             '172.17.0.1',           # Default Docker bridge
-            'gateway.docker.internal', # Alternative
-            '10.0.2.2'              # VirtualBox/VMware
         ]
 
         debug_port = int(os.getenv('DEBUG_PORT', '5678'))

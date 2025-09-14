@@ -12,6 +12,7 @@ class AfterConstraint(Constraint):
 
     task: Optional[Task | str] = ConstraintParameter(
         param_type=Task,
+        link='task'
     )
 
     def attach_task_constraint(self, model: CpModel, task: Task):
@@ -32,9 +33,11 @@ class AfterConstraintScenario(Constraint):
 
     task_before: Optional[Task | str] = ConstraintParameter(
         param_type=Task,
+        link='task'
     )
     task_after: Optional[Task | str] = ConstraintParameter(
         param_type=Task,
+        link='task'
     )
 
     def attach_task_constraint(
