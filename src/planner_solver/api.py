@@ -151,5 +151,30 @@ async def post_scenario_resource(
 
     return base_model.to_form()
 
+@app.delete('/scenario/{uuid_scenario}/resource/{uuid}')
+async def delete_scenario_resource(
+        uuid_scenario: str,
+        uuid: str
+) -> BasePlannerSolverForm[Resource]:
+    scenario_document = await mongodb_service.get_scenario_document(uuid_scenario)
+
+    if not scenario_document:
+        raise HTTPException(status_code=404, detail='scenario not found')
+
+    found = await mongodb_service.get_resource_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid
+    )
+
+    if not found:
+        raise HTTPException(status_code=404, detail='resource not found')
+
+    await mongodb_service.delete_resource_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid
+    )
+
+    return found.to_base_model().to_form()
+
 
 # endregion resource

@@ -116,5 +116,17 @@ async def test_resource_creation(
     assert content[0]['data']['uuid'] == uuid_machine
     assert content[0]['type'] == "machinery_resource"
 
+    # todo add edit
+
+    # and now I delete it, simply
+    response = client.delete(f"/scenario/{uuid_scenario}/resource/{uuid_machine}")
+    assert response.status_code == 200
+
+    # the scenario now has 0 resources
+    response = client.get(f"/scenario/{uuid_scenario}/resource")
+    assert response.status_code == 200
+    content = response.json()
+    assert len(content) == 0
+
 
 # endregion resource

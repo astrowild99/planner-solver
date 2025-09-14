@@ -145,11 +145,10 @@ class MongodbService:
     ) -> ResourceDocument | None:
         await self.__connect()
 
-        scenario = await self.get_scenario_document(uuid_scenario)
-
         return await ResourceDocument.find(
-            ResourceDocument.scenario == scenario,
-            ResourceDocument.uuid == uuid
+            ResourceDocument.scenario.uuid == uuid_scenario,
+            ResourceDocument.uuid == uuid,
+            fetch_links=True
         ).first_or_none()
 
     async def store_resource_document(
@@ -173,6 +172,19 @@ class MongodbService:
         resource.uuid = stored_resource.uuid
 
         return stored_resource
+
+    async def delete_resource_document(
+            self,
+            uuid_scenario,
+            uuid,
+    ):
+        await self.__connect()
+
+        await ResourceDocument.find(
+            ResourceDocument.scenario.uuid == uuid_scenario,
+            ResourceDocument.uuid == uuid,
+            fetch_links=True,
+        ).delete()
 
     # endregion resource
 
