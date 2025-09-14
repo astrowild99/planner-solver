@@ -12,7 +12,7 @@ from typing import cast, List
 from fastapi import FastAPI, HTTPException
 
 from planner_solver.containers import ApplicationContainer
-from planner_solver.models.base_models import Scenario, Resource, Task
+from planner_solver.models.base_models import Scenario, Resource, Task, Constraint
 from planner_solver.models.forms import BasePlannerSolverForm
 
 logger = logging.getLogger(__name__)
@@ -253,3 +253,73 @@ async def delete_scenario_task(
     return found.to_base_model().to_form()
 
 # endregion task
+
+# region constraint
+
+@app.get('/scenario/{uuid_scenario}/constraint')
+async def get_scenario_constraints(
+        uuid_scenario: str
+) -> List[BasePlannerSolverForm[Constraint]]:
+    found = await mongodb_service.get_constraint_documents(
+        uuid_scenario=uuid_scenario,
+    )
+
+    return [f.to_base_model().to_form() for f in found]
+
+@app.get('/scenario/{uuid_scenario}/constraint/{uuid}')
+async def get_scenario_constraint(
+        uuid_scenario: str,
+        uuid: str,
+) -> BasePlannerSolverForm[Constraint]:
+    found = await mongodb_service.get_constraint_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid,
+    )
+
+    if not found:
+        raise HTTPException(status_code=404, detail='scenario constraint not found')
+
+    return found.to_base_model().to_form()
+
+@app.post('/scenario/{uuid_scenario}/constraint')
+async def post_scenario_constraint(
+        uuid_scenario: str,
+        constraint_form: BasePlannerSolverForm,
+) -> BasePlannerSolverForm[Constraint]:
+    scenario_document = await mongodb_service.get_scenario_document(uuid=uuid_scenario)
+
+    if not scenario_document:
+        raise HTTPException(status_code=400, detail='scenario not found')
+
+    constraint = cast(BasePlannerSolverForm[Constraint], constraint_form)
+
+    base_model = constraint.to_base_model()
+
+    await mongodb_service.store_constraint_document(
+        uuid_scenario=uuid_scenario,
+        constraint=base_model
+    )
+
+    return base_model.to_form()
+
+@app.delete('/scenario/{uuid_scenario}/constraint/{uuid}')
+async def delete_scenario_constraint(
+        uuid_scenario: str,
+        uuid: str
+) -> BasePlannerSolverForm[Constraint]:
+    found = await mongodb_service.get_constraint_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid,
+    )
+
+    if not found:
+        raise HTTPException(status_code=404, detail='constraint not found')
+
+    await mongodb_service.delete_constraint_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid,
+    )
+
+    return found.to_base_model().to_form()
+
+# endregion constraint

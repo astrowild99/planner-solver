@@ -7,7 +7,7 @@ from beanie.exceptions import DocumentNotFound
 from pymongo import AsyncMongoClient
 
 from planner_solver.config.models import MongodbConfig
-from planner_solver.models.base_models import Scenario, Resource, Task
+from planner_solver.models.base_models import Scenario, Resource, Task, Constraint
 from planner_solver.models.stored_documents import TaskDocument, ConstraintDocument, ResourceDocument, ScenarioDocument
 from planner_solver.services.types_service import TypesService
 
@@ -154,18 +154,76 @@ class MongodbService:
 
     # region constraint
 
-    async def get_all_constraint_documents(self) -> List[ConstraintDocument]:
+    async def get_all_constraint_documents(
+            self
+    ) -> List[ConstraintDocument]:
         await self.__connect()
         return await ConstraintDocument.find_all().to_list()
 
-    async def get_constraint_documents(self) -> List[ConstraintDocument]:
+    async def get_constraint_documents(
+            self,
+            uuid_scenario: str,
+    ) -> List[ConstraintDocument]:
         await self.__connect()
-        return await ConstraintDocument.find_all().to_list()
 
-    async def get_constraint_document(self, uuid: str) -> ConstraintDocument | None:
+        return await ConstraintDocument.find(
+            ConstraintDocument.scenario.uuid == uuid_scenario,
+            fetch_links=True,
+        ).to_list()
+
+    async def get_constraint_document(
+            self,
+            uuid_scenario: str,
+            uuid: str
+    ) -> ConstraintDocument | None:
         await self.__connect()
         return await ConstraintDocument.find(
-            ConstraintDocument.uuid == uuid
+            ConstraintDocument.uuid == uuid,
+            ConstraintDocument.scenario.uuid == uuid_scenario,
+            fetch_links=True
+        ).first_or_none()
+
+    async def store_constraint_document(
+            self,
+            uuid_scenario: str,
+            constraint: Constraint,
+            uuid: Optional[str] = None
+    ) -> ConstraintDocument:
+        await self.__connect()
+
+        scenario = await self.get_scenario_document(uuid=uuid_scenario)
+
+        if uuid is not None:
+            raise Exception("Update not yet implemented")
+        else:
+            constraint_document = ConstraintDocument.from_base_model(constraint)
+            constraint_document.scenario = scenario
+
+            stored_constraint = await constraint_document.insert()
+
+        constraint.uuid = stored_constraint.uuid
+
+        return stored_constraint
+
+    async def delete_constraint_document(
+            self,
+            uuid_scenario: str,
+            uuid: str,
+    ) -> None:
+        await self.__connect()
+
+        await ConstraintDocument.find(
+            ConstraintDocument.uuid == uuid,
+            ConstraintDocument.scenario.uuid == uuid_scenario,
+            fetch_links=True
+        ).delete()
+
+    async def get_constraint_document_by_uuid(self, uuid: str) -> ConstraintDocument | None:
+        """Get constraint document by UUID only (without scenario filtering)"""
+        await self.__connect()
+        return await ConstraintDocument.find(
+            ConstraintDocument.uuid == uuid,
+            fetch_links=True
         ).first_or_none()
 
     # endregion constraint
