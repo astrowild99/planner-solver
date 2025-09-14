@@ -23,9 +23,14 @@ services:
             - "**/*.pyc"
     networks:
       - test-planner-solver
+      - test-debug
     volumes:
       - ./tests/integration/configs:/usr/src/app/configs
     restart: no
+    environment:
+      ENABLE_DEBUG: ${PYCHARM_ENABLE_DEBUG:-false}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       mongo-db:
         condition: service_healthy
@@ -65,3 +70,5 @@ services:
 networks:
   test-planner-solver:
     internal: true
+  test-debug:
+    driver: bridge

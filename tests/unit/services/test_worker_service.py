@@ -60,6 +60,8 @@ async def test_simple_worker(
     after_constraint = AfterConstraint()
     after_constraint.task = task_b
 
+    breakpoint()
+
     task_a.add_constraint(after_constraint)
 
     # with a fixed constraint of number of operators

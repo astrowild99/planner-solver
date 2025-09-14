@@ -48,8 +48,8 @@ class AfterConstraintScenario(Constraint):
             self,
             model: CpModel
     ) -> None:
-        before_task: Task = self.task_before.resolve_value(self)
-        after_task: Task = self.task_after.resolve_value(self)
+        before_task: Task = self.task_before
+        after_task: Task = self.task_after
 
         if not before_task or not after_task:
             raise ValueError("Cannot resolve task references for AfterConstraintScenario")

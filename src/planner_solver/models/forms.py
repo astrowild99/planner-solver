@@ -3,7 +3,6 @@ from typing import TypeVar, Any, Dict, Optional, Generic
 from pydantic import BaseModel
 
 from planner_solver.containers.singletons import types_service
-from planner_solver.models.stored_documents import BasePlannerSolverDocument
 
 T = TypeVar('T')
 

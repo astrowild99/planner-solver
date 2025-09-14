@@ -26,10 +26,15 @@ CMD "planner-solver"
 FROM dev AS test
 
 ENV PYTHONBUFFERED=1
+ENV ENABLE_DEBUG=false
+
+RUN pip install debugpy pydevd_pycharm
 
 COPY --chmod=755 docker/entrypoint-test.sh "/usr/src/app/entrypoint.sh"
 ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
 
 COPY tests tests
+
+EXPOSE 5678
 
 CMD echo "Ready" && sleep infinity
