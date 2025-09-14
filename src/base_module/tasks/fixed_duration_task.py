@@ -17,8 +17,8 @@ class FixedDurationTask(Task):
 
     __uuid: str
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.__constraints: List[Constraint] = []
         self.__resources: List[Resource] = []
         self.__uuid: str = str(uuid.uuid4())

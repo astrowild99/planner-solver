@@ -128,5 +128,60 @@ async def test_resource_creation(
     content = response.json()
     assert len(content) == 0
 
+@pytest.mark.asyncio
+async def test_task_creation(
+        client
+):
+    # as usual, I create a scenario
+    response = client.post('/scenario', json={
+        "type": "simple_shop_floor",
+        "data": {
+            "label": "lorem ipsum dolor sit amet"
+        }
+    })
+
+    assert response.status_code == 200
+    content = response.json()
+    uuid_scenario = content['data']['uuid']
+
+    # the task list should be empty
+    response = client.get(f"/scenario/{uuid_scenario}/task")
+    assert response.status_code == 200
+    content = response.json()
+    assert len(content) == 0
+
+    # now I create the task, and since I specified no resources that need
+    # extra values in the task, the scenario should be ok
+    # todo add scenario current status evaluation
+
+    response = client.post(f"/scenario/{uuid_scenario}/task", json={
+        "type": "fixed_duration_task",
+        "data": {
+            "label": "First Task",
+            "duration": 2
+        }
+    })
+    assert response.status_code == 200
+    content = response.json()
+    assert content['type'] == 'fixed_duration_task'
+    uuid_first_task = content['data']['uuid']
+    assert type(uuid_first_task) is str
+
+    # now the list obviously has 1 item
+    response = client.get(f"/scenario/{uuid_scenario}/task")
+    assert response.status_code == 200
+    content = response.json()
+    assert len(content) == 1
+
+    # todo implement edit
+
+    # now I delete it
+    response = client.delete(f"/scenario/{uuid_scenario}/task/{uuid_first_task}")
+    assert response.status_code == 200
+
+    response = client.get(f"/scenario/{uuid_scenario}/task")
+    assert response.status_code == 200
+    content = response.json()
+    assert len(content) == 0
 
 # endregion resource

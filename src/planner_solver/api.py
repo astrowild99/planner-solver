@@ -7,12 +7,12 @@ messages exchanged via the rabbitmq server
 import dataclasses
 import datetime
 import logging
-from typing import cast
+from typing import cast, List
 
 from fastapi import FastAPI, HTTPException
 
 from planner_solver.containers import ApplicationContainer
-from planner_solver.models.base_models import Scenario, Resource
+from planner_solver.models.base_models import Scenario, Resource, Task
 from planner_solver.models.forms import BasePlannerSolverForm
 
 logger = logging.getLogger(__name__)
@@ -110,7 +110,7 @@ async def delete_scenario(
 @app.get('/scenario/{uuid_scenario}/resource')
 async def get_scenario_resources(
         uuid_scenario: str
-):
+) -> List[BasePlannerSolverForm[Resource]]:
     found = await mongodb_service.get_resource_documents(uuid_scenario=uuid_scenario)
 
     return [f.to_base_model().to_form() for f in found]
@@ -119,7 +119,7 @@ async def get_scenario_resources(
 async def get_scenario_resource(
         uuid_scenario: str,
         uuid: str
-):
+) -> BasePlannerSolverForm[Resource]:
     found = await mongodb_service.get_resource_document(
         uuid_scenario=uuid_scenario,
         uuid=uuid
@@ -178,3 +178,78 @@ async def delete_scenario_resource(
 
 
 # endregion resource
+
+# region task
+
+@app.get('/scenario/{uuid_scenario}/task')
+async def get_scenario_tasks(
+        uuid_scenario: str
+) -> List[BasePlannerSolverForm[Task]]:
+    found = await mongodb_service.get_task_documents(uuid_scenario=uuid_scenario)
+
+    return [f.to_base_model().to_form() for f in found]
+
+@app.get('/scenario/{uuid_scenario}/task/{uuid}')
+async def get_scenario_task(
+        uuid_scenario: str,
+        uuid: str
+) -> BasePlannerSolverForm[Task]:
+    found = await mongodb_service.get_task_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid,
+    )
+
+    if not found:
+        raise HTTPException(status_code=404, detail='scenario task not found')
+
+    return found.to_base_model().to_form()
+
+@app.post('/scenario/{uuid_scenario}/task')
+async def post_scenario_task(
+        uuid_scenario: str,
+        task_form: BasePlannerSolverForm,
+) -> BasePlannerSolverForm[Task]:
+    scenario_document = await mongodb_service.get_scenario_document(
+        uuid=uuid_scenario
+    )
+
+    if not scenario_document:
+        raise HTTPException(status_code=404, detail='scenario not found')
+
+    task = cast(BasePlannerSolverForm[Task], task_form)
+
+    base_model = task.to_base_model()
+
+    await mongodb_service.store_task_document(
+        uuid_scenario=uuid_scenario,
+        task=base_model,
+    )
+
+    return base_model.to_form()
+
+@app.delete('/scenario/{uuid_scenario}/task/{uuid}')
+async def delete_scenario_task(
+        uuid_scenario: str,
+        uuid: str
+) -> BasePlannerSolverForm[Task]:
+    scenario_document = await mongodb_service.get_scenario_document(uuid_scenario)
+
+    if not scenario_document:
+        raise HTTPException(status_code=404, detail='scenario not found')
+
+    found = await mongodb_service.get_task_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid
+    )
+
+    if not found:
+        raise HTTPException(status_code=404, detail='task not found')
+
+    await mongodb_service.delete_task_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid
+    )
+
+    return found.to_base_model().to_form()
+
+# endregion task

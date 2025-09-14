@@ -7,7 +7,7 @@ from beanie.exceptions import DocumentNotFound
 from pymongo import AsyncMongoClient
 
 from planner_solver.config.models import MongodbConfig
-from planner_solver.models.base_models import Scenario, Resource
+from planner_solver.models.base_models import Scenario, Resource, Task
 from planner_solver.models.stored_documents import TaskDocument, ConstraintDocument, ResourceDocument, ScenarioDocument
 from planner_solver.services.types_service import TypesService
 
@@ -83,20 +83,72 @@ class MongodbService:
         await self.__connect()
 
         for x in MODELS:
-            print("Clearing model")
             await x.delete_all()
 
     # region task
 
-    async def get_task_documents(self) -> List[TaskDocument]:
+    async def get_all_task_documents(self) -> List[TaskDocument]:
         await self.__connect()
         return await TaskDocument.find_all().to_list()
 
-    async def get_task_document(self, uuid: str) -> TaskDocument | None:
+    async def get_task_documents(
+            self,
+            uuid_scenario: str,
+    ) -> List[TaskDocument]:
         await self.__connect()
+
         return await TaskDocument.find(
-            TaskDocument.uuid == uuid
+            ResourceDocument.scenario.uuid == uuid_scenario,
+            fetch_links=True
+        ).to_list()
+
+    async def get_task_document(
+            self,
+            uuid_scenario: str,
+            uuid: str
+    ) -> TaskDocument | None:
+        await self.__connect()
+
+        return await TaskDocument.find(
+            TaskDocument.scenario.uuid == uuid_scenario,
+            TaskDocument.uuid == uuid,
+            fetch_links=True
         ).first_or_none()
+
+    async def store_task_document(
+            self,
+            uuid_scenario: str,
+            task: Task,
+            uuid: Optional[str] = None
+    ) -> TaskDocument:
+        await self.__connect()
+
+        scenario = await self.get_scenario_document(uuid=uuid_scenario)
+
+        if uuid is not None:
+            raise Exception("Update not yet implemented")
+        else:
+            task_document = TaskDocument.from_base_model(task)
+            task_document.scenario = scenario
+
+            stored_task = await task_document.insert()
+
+        task.uuid = stored_task.uuid
+
+        return stored_task
+
+    async def delete_task_document(
+            self,
+            uuid_scenario: str,
+            uuid: str,
+    ) -> None:
+        await self.__connect()
+
+        await TaskDocument.find(
+            TaskDocument.uuid == uuid,
+            TaskDocument.scenario.uuid == uuid_scenario,
+            fetch_links=True
+        ).delete()
 
     # endregion task
 
@@ -153,10 +205,10 @@ class MongodbService:
 
     async def store_resource_document(
             self,
-            uuid_scenario,
+            uuid_scenario: str,
             resource: Resource,
             uuid: Optional[str] = None
-    ):
+    ) -> ResourceDocument:
         await self.__connect()
 
         scenario = await self.get_scenario_document(uuid_scenario)
@@ -177,7 +229,7 @@ class MongodbService:
             self,
             uuid_scenario,
             uuid,
-    ):
+    ) -> None:
         await self.__connect()
 
         await ResourceDocument.find(
