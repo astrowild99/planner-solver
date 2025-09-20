@@ -1,5 +1,3 @@
-from typing import Optional
-
 from beanie import Link
 from ortools.sat.python.cp_model import CpModel
 
@@ -33,11 +31,11 @@ class AfterConstraintScenario(Constraint):
     The scenario-wide version of the after constraint
     """
 
-    task_before: Link[TaskDocument] = ConstraintParameter(
+    task_before: Link[TaskDocument] | str = ConstraintParameter(
         param_type=Task,
         link='task'
     )
-    task_after: Link[TaskDocument] = ConstraintParameter(
+    task_after: Link[TaskDocument] | str = ConstraintParameter(
         param_type=Task,
         link='task'
     )

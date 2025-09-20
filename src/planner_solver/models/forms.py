@@ -16,10 +16,16 @@ class BasePlannerSolverForm(BaseModel, Generic[T]):
     data: Dict[str, Any] | None = None
     """the dict to create the model"""
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        print("WAS HERE")
+
     def to_base_model(self) -> Optional[T]:
         """
         checks the content of the form and creates the model
         """
         model_type: BaseModel = types_service.get(self.type)
+
+        print("AND THIS IS WHERE I FAIL")
 
         return model_type.model_validate(self.data)
