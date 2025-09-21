@@ -74,7 +74,7 @@ class TaskDocument(BasePlannerSolverDocument):
         return type.model_validate(data)
 
     class Settings:
-        name = "ps_documents"
+        name = "ps_tasks"
         indexes = [
             [
                 ("uuid", pymongo.TEXT),

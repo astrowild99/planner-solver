@@ -278,15 +278,28 @@ async def test_constraint_linked_to_tasks_creation(
     assert task_after['data']['uuid'] == uuid_second_task
     assert task_after['data']['label'] == 'Second Task'
 
-    # and now I create a third task, with the constraint after task 2
-    # response = client.post(f"/scenario/{uuid_scenario}/task", json={
-    #     "type": "fixed_duration_task",
-    #     "data": {
-    #         "label": "Third Task",
-    #         "duration": 4,
-    #         "constraint"
-    #     }
-    # })
-    # todo handle the deletion
+    # todo handle the creation of constraints within tasks if needed
+
+    # todo handle data sanitation by uncommenting here
+    # then I try to delete one of the tasks, and I should be prevented as there are constraints
+    # linked to it
+    # response = client.delete(f"/scenario/{uuid_scenario}/task/{uuid_first_task}")
+    # assert response.status_code == 403 # forbidden
+
+    # then, I first delete the constraint
+    response = client.delete(f"/scenario/{uuid_scenario}/constraint/{uuid_constraint_of_scenario}")
+    assert response.status_code == 200
+    response = client.get(f"/scenario/{uuid_scenario}/constraint/{uuid_constraint_of_scenario}")
+    assert response.status_code == 404
+
+    # and now I can delete it with no warnings
+    response = client.delete(f"/scenario/{uuid_scenario}/task/{uuid_first_task}")
+    assert response.status_code == 200
+    # client.get(f"/scenario/{uuid_scenario}/task/{uuid_first_task}")
+    # client.get(f"/scenario/{uuid_scenario}/task/{uuid_first_task}")
+    #
+    # # and upon retrieving it, I have a 404
+    # response = client.get(f"/scenario/{uuid_scenario}/task/{uuid_first_task}")
+    # assert response.status_code == 404
 
 # endregion basic scenario contents

@@ -17,7 +17,7 @@ if os.getenv('ENABLE_DEBUG', 'false').lower() == 'true':
 
         for host in hosts_to_try:
             try:
-                print(f"🔍 Trying to connect to PyCharm debugger at {host}:{debug_port}")
+                print(f"Trying to connect to PyCharm debugger at {host}:{debug_port}")
                 pydevd_pycharm.settrace(host, port=debug_port)
                 print(f"PyCharm debugger connected to {host}:{debug_port}!")
                 connected = True

@@ -27,6 +27,4 @@ class BasePlannerSolverForm(BaseModel, Generic[T]):
         """
         model_type: BaseModel = types_service.get(self.type)
 
-        print("AND THIS IS WHERE I FAIL")
-
         return model_type.model_validate(self.data)
