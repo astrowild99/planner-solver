@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Optional, Any, Dict, List, Type, TYPE_CHECKING
 
 import pymongo
-from beanie import Document, Link, before_event, Replace, Insert
+from beanie import Document, Link, before_event, Replace, Insert, PydanticObjectId
 from uuid import uuid4
 
 from pydantic import Field
@@ -13,9 +14,10 @@ from planner_solver.containers.singletons import types_service
 from planner_solver.exceptions.type_exceptions import TypeException
 
 if TYPE_CHECKING:
-    from planner_solver.models.base_models import Scenario, Resource, Constraint, Task
+    from planner_solver.models.base_models import Scenario, Resource, Constraint, Task, PlannerSolverBaseModel
 
-class BasePlannerSolverDocument(Document):
+
+class BasePlannerSolverDocument(Document, ABC):
     """
     used only to store and retrieve task data
     never used directly in the software, instead obtain the
@@ -34,6 +36,10 @@ class BasePlannerSolverDocument(Document):
     @before_event(Replace, Insert)
     def update_updated_at(self):
         self.updated_at = datetime.now()
+
+    @abstractmethod
+    def to_base_model(self) -> PlannerSolverBaseModel:
+        pass
 
     is_deleted: bool = Field(default=False)
     """Beware! soft delete is not implemented as of 20250907"""

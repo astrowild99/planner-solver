@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Set, Tuple
 from enum import Enum, IntEnum
 
 from ortools.sat.python.cp_model import CpModel, CpSolver, IntVar, IntervalVar
@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from planner_solver.exceptions.type_exceptions import TypeException
 from planner_solver.models.forms import BasePlannerSolverForm
+from planner_solver.models.stored_documents import BasePlannerSolverDocument
 
 
 # this file contains all the really basic classes
@@ -63,13 +64,106 @@ class PlannerSolverBaseModel(BaseModel):
     uuid: str | None = None
     """This is specified only when retrieved from the database"""
 
-    def to_form(self) -> BasePlannerSolverForm:
+    def __exclude_hydration(self) -> Tuple[Set[str], Set[str], Set[str]]:
+        from beanie.odm.fields import PydanticObjectId
+        excluded = set()
+        beanie_models = set()
+        base_models = set()
+
+        # Iterate through all attributes of this instance
+        for attr_name in dir(self):
+            if not attr_name.startswith('_'):  # Skip private attributes
+                try:
+                    attr_value = getattr(self, attr_name)
+
+                    # Check if the attribute has a beanie id (PydanticObjectId)
+                    if hasattr(attr_value, 'id') and isinstance(getattr(attr_value, 'id'), PydanticObjectId):
+                        excluded.add(attr_name)
+                        beanie_models.add(attr_name)
+                    # Check if the attribute has __ps_type_name (indicating it's a hydrated model)
+                    elif hasattr(attr_value, '__ps_type_name'):
+                        excluded.add(attr_name)
+                        base_models.add(attr_name)
+                    # Check for lists/collections of hydrated models or beanie objects
+                    elif hasattr(attr_value, '__iter__') and not isinstance(attr_value, (str, bytes)):
+                        try:
+                            for item in attr_value:
+                                has_beanie_id = hasattr(item, 'id') and isinstance(getattr(item, 'id'), PydanticObjectId)
+                                if has_beanie_id or hasattr(item, '__ps_type_name'):
+                                    excluded.add(attr_name)
+                                    beanie_models.add(attr_name)
+                                    break
+                        except (TypeError, AttributeError):
+                            # Skip if not iterable or other issues
+                            pass
+                except (AttributeError, TypeError):
+                    # Skip if we can't access the attribute
+                    pass
+
+        return excluded, beanie_models, base_models
+
+    def to_form(
+            self,
+            hydrate: bool = True,
+            max_depth: int = 3,
+    ) -> BasePlannerSolverForm:
         if not hasattr(self, '__ps_type_name'):
             raise TypeException("Make sure to cast to a type decorated with the module type")
+
+        if hydrate:
+            excluded, beanie_models, base_models = self.__exclude_hydration()
+        else:
+            excluded = set()
+            beanie_models = set()
+            base_models = set()
+
+        dumped = self.model_dump(
+            exclude=excluded
+        )
+
+        # and now I hydrate the ones that I excluded, following the same behavior used to hydrate myself
+        dumped = self.__hydrate(
+            data=dumped,
+            beanie_models_fields=beanie_models,
+            base_models_field=base_models,
+            max_depth=max_depth,
+        )
+
         return BasePlannerSolverForm(
             type=getattr(self, '__ps_type_name'),
-            data=self.model_dump()
+            data=dumped,
         )
+
+    def __hydrate(
+            self,
+            data: Dict[str, Any],
+            beanie_models_fields: Set[str],
+            base_models_field: Set[str],
+            max_depth: int = 3,
+    ) -> Dict[str, Any]:
+        """
+        hydrates the link beanie_models_fields
+        """
+        if max_depth == 0:
+            return data
+
+        for f in beanie_models_fields:
+            if hasattr(self, f):
+                attr: BasePlannerSolverDocument = getattr(self, f)
+                hydrated_form = attr.to_base_model().to_form(max_depth=max_depth - 1)
+                data[f] = hydrated_form.model_dump()
+            else:
+                raise Exception(f"Trying to serialize missing beanie attribute {f}")
+
+        for f in base_models_field:
+            if hasattr(self, f):
+                attr: PlannerSolverBaseModel = getattr(self, f)
+                hydrated_form = attr.to_form(max_depth=max_depth - 1)
+                data[f] = hydrated_form.model_dump()
+            else:
+                raise Exception(f"Trying to serialize missing base attribute {f}")
+
+        return data
 
     model_config = {
         "arbitrary_types_allowed": True,

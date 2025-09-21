@@ -271,14 +271,22 @@ async def test_constraint_linked_to_tasks_creation(
     task_before = constraint['data']['task_before']
     assert task_before['type'] == 'fixed_duration_task'
     assert task_before['data']['uuid'] == uuid_first_task
-    assert task_before['data']['label'] == 'First task'
+    assert task_before['data']['label'] == 'First Task'
 
     task_after = constraint['data']['task_after']
     assert task_after['type'] == 'fixed_duration_task'
-    assert task_after['data']['uuid'] == uuid_first_task
-    assert task_after['data']['label'] == 'First task'
+    assert task_after['data']['uuid'] == uuid_second_task
+    assert task_after['data']['label'] == 'Second Task'
 
-    # todo handle the creation from within the task
+    # and now I create a third task, with the constraint after task 2
+    # response = client.post(f"/scenario/{uuid_scenario}/task", json={
+    #     "type": "fixed_duration_task",
+    #     "data": {
+    #         "label": "Third Task",
+    #         "duration": 4,
+    #         "constraint"
+    #     }
+    # })
     # todo handle the deletion
 
 # endregion basic scenario contents
