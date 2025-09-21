@@ -358,7 +358,8 @@ async def launch_scenario(
 
     # then I send the signal to the workers
     rabbitmq_service.publish_execution_trigger(data={
-        "scenario": scenario.to_base_model().model_dump()
+        "uuid_scenario": uuid_scenario,
+        "uuid_execution": execution_document.uuid
     })
 
     return execution_document

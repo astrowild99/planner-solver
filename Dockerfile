@@ -4,6 +4,8 @@ FROM python:3.12.3-slim AS python_upstream
 
 FROM python_upstream AS dev
 
+ENV PYTHONBUFFERED=1
+
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./

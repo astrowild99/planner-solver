@@ -1,6 +1,7 @@
 import json
 import logging
-from typing import Dict, Any
+import asyncio
+from typing import Dict, Any, Callable
 
 import pika
 from planner_solver.config.models import RabbitmqConfig
@@ -55,6 +56,89 @@ class RabbitmqService:
     def publish_execution_trigger(self, data: Dict[str, Any]) -> None:
         """Public method to publish to execution_trigger queue"""
         self._publish_message(data)
+
+    def start_consuming_async(self, async_callback_function: Callable) -> None:
+        """Start consuming messages from the execution_trigger queue with async support"""
+        self._get_connection()
+
+        def wrapper(ch, method, properties, body):
+            """Wrapper to handle async message processing and acknowledgment"""
+            try:
+                # Parse the JSON message
+                data = json.loads(body)
+                logger.info(f"Received message: {data}")
+
+                # Run the async callback in the event loop
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    loop.run_until_complete(async_callback_function(data))
+                finally:
+                    loop.close()
+
+                # Acknowledge the message after successful processing
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            except Exception as e:
+                logger.error(f"Error processing message: {e}")
+                # Reject the message and don't requeue it to avoid infinite loops
+                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
+        # Set up the consumer
+        self.__channel.basic_qos(prefetch_count=1)  # Process one message at a time
+        self.__channel.basic_consume(
+            queue='execution_trigger',
+            on_message_callback=wrapper
+        )
+
+        logger.info("Starting to consume messages from execution_trigger queue...")
+        logger.info("To stop consuming, press CTRL+C")
+
+        try:
+            self.__channel.start_consuming()
+        except KeyboardInterrupt:
+            logger.info("Stopping consumer...")
+            self.__channel.stop_consuming()
+            self.close()
+
+    def start_consuming(self, callback_function) -> None:
+        """Start consuming messages from the execution_trigger queue (sync version)"""
+        self._get_connection()
+
+        def wrapper(ch, method, properties, body):
+            """Wrapper to handle message processing and acknowledgment"""
+            try:
+                # Parse the JSON message
+                data = json.loads(body)
+                logger.info(f"Received message: {data}")
+
+                # Call the provided callback function
+                callback_function(data)
+
+                # Acknowledge the message after successful processing
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            except Exception as e:
+                logger.error(f"Error processing message: {e}")
+                # Reject the message and don't requeue it to avoid infinite loops
+                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
+        # Set up the consumer
+        self.__channel.basic_qos(prefetch_count=1)  # Process one message at a time
+        self.__channel.basic_consume(
+            queue='execution_trigger',
+            on_message_callback=wrapper
+        )
+
+        logger.info("Starting to consume messages from execution_trigger queue...")
+        logger.info("To stop consuming, press CTRL+C")
+
+        try:
+            self.__channel.start_consuming()
+        except KeyboardInterrupt:
+            logger.info("Stopping consumer...")
+            self.__channel.stop_consuming()
+            self.close()
 
     def close(self) -> None:
         """Close the connection to RabbitMQ"""
