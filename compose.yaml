@@ -19,6 +19,8 @@ services:
     networks:
       - planner-solver
     restart: no # change in production
+    ports:
+      - "8080:8080"
     depends_on:
       mongo-db:
         condition: service_healthy
@@ -30,6 +32,7 @@ services:
     command:
       - planner-solver-runner
     scale: ${NUM_WORKERS:-2}
+    ports: []
 
   mongo-db:
     image: mongo:noble

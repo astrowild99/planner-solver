@@ -16,7 +16,7 @@ class TargetType:
         setattr(cls, '__ps_type_name', self.type_name)
         setattr(cls, '__ps_type_type', 'target')
 
-        types_service.register_target_type(cls)
+        types_service.register_target_type(cls, self.type_name)
 
         return cls
 

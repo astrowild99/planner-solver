@@ -12,7 +12,7 @@ class ScenarioType:
         setattr(cls, '__ps_type_name', self.type_name)
         setattr(cls, '__ps_type_type', 'scenario')
 
-        types_service.register_scenario_type(cls)
+        types_service.register_scenario_type(cls, self.type_name)
 
         return cls
 

@@ -1,16 +1,20 @@
+from __future__ import annotations
+
 import copy
 import logging
-from enum import IntEnum
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from ortools.sat.cp_model_pb2 import CpSolverStatus
 from ortools.sat.python.cp_model import CpModel, CpSolver
 
 from planner_solver.exceptions.worker_exceptions import WorkerStatusException
-from planner_solver.models.base_models import Scenario, Solver, Resource, Task, Target, WrappedModel, Constraint, \
-    ScenarioStatus, TaskStatus, WrappedSolver
+from planner_solver.models.enums import WorkerTaskOutputStatus
 from planner_solver.services.mongodb_service import MongodbService
 from planner_solver.services.rabbitmq_service import RabbitmqService
+
+if TYPE_CHECKING:
+    from planner_solver.models.base_models import Scenario, Solver, Resource, Task, Target, WrappedModel, Constraint, \
+        ScenarioStatus, TaskStatus, WrappedSolver
 
 logger = logging.getLogger(__name__)
 
@@ -34,46 +38,6 @@ class WorkerTaskInput:
         self.wrapped_model = wrapped_model
         self.scenario = scenario
         self.solver = solver
-
-class WorkerTaskOutputStatus(IntEnum):
-    """
-    simpler enum to wrap the solver result. The descriptions are copied from cp_model_pb2.pyi
-    """
-    UNKNOWN = 0
-    """
-    The status of the model is still unknown. A search limit has been reached
-    before any of the statuses below could be determined.
-    """
-    MODEL_INVALID = 1
-    """
-    The given CpModelProto didn't pass the validation step. You can get a
-    detailed error by calling ValidateCpModel(model_proto).
-    """
-    FEASIBLE = 2
-    """
-    A feasible solution has been found. But the search was stopped before we
-    could prove optimality or before we enumerated all solutions of a
-    feasibility problem (if asked).
-    """
-    INFEASIBLE = 3
-    """
-    The problem has been proven infeasible.
-    """
-    OPTIMAL = 4
-    """
-    An optimal feasible solution has been found.
-
-    More generally, this status represent a success. So we also return OPTIMAL
-    if we find a solution for a pure feasibility problem or if a gap limit has
-    been specified and we return a solution within this limit. In the case
-    where we need to return all the feasible solution, this status will only be
-    returned if we enumerated all of them; If we stopped before, we will return
-    FEASIBLE.
-    """
-
-    @staticmethod
-    def from_cp_status(cp_status: CpSolverStatus) -> "WorkerTaskOutputStatus":
-        return WorkerTaskOutputStatus(cp_status)
 
 
 class WorkerTaskOutput:
@@ -110,6 +74,7 @@ class WorkerService:
         self.__rabbitmq_service = rabbitmq_service
 
     def _boot_model(self) -> WrappedModel:
+        from planner_solver.models.base_models import WrappedModel
         model = CpModel()
         variables = {}
 
@@ -355,6 +320,8 @@ class WorkerService:
         """
         Creates a new scenario with the results obtained from the computation
         """
+        from planner_solver.models.base_models import ScenarioStatus, TaskStatus
+
         solved_scenario = copy.deepcopy(scenario)
 
         if (solver_status == WorkerTaskOutputStatus.UNKNOWN or
@@ -388,6 +355,7 @@ class WorkerService:
         solves the task without any callback during execution
         one thread per worker
         """
+        from planner_solver.models.base_models import WrappedSolver
 
         model = task.wrapped_model.model
         variables = task.wrapped_model.variables

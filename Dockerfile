@@ -4,9 +4,12 @@ FROM python:3.12.3-slim AS python_upstream
 
 FROM python_upstream AS dev
 
+ENV PYTHONBUFFERED=1
+
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
+RUN sed -i '/^-e /d' requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chmod=755 docker/entrypoint-dev.sh "entrypoint.sh"
@@ -24,6 +27,16 @@ CMD "planner-solver"
 
 FROM dev AS test
 
+ENV PYTHONBUFFERED=1
+ENV ENABLE_DEBUG=false
+
+RUN pip install debugpy pydevd_pycharm
+
+COPY --chmod=755 docker/entrypoint-test.sh "/usr/src/app/entrypoint.sh"
+ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
+
 COPY tests tests
+
+EXPOSE 5678
 
 CMD echo "Ready" && sleep infinity

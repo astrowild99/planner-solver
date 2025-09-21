@@ -1,0 +1,368 @@
+"""
+This creates the asgi service using FastAPI to communicate with the outside world
+
+the apis are not the only way that the system communicates, as you can also listen to
+messages exchanged via the rabbitmq server
+"""
+import dataclasses
+import datetime
+import logging
+from typing import cast, List
+
+from fastapi import FastAPI, HTTPException
+
+from planner_solver.containers import ApplicationContainer
+from planner_solver.models.base_models import Scenario, Resource, Task, Constraint
+from planner_solver.models.forms import BasePlannerSolverForm
+from planner_solver.models.stored_documents import ExecutionDocument
+
+logger = logging.getLogger(__name__)
+
+app = FastAPI(
+    title="PlannerSolver",
+    description="A wrapper around google or tools to handle planning in a modular way"
+)
+
+# region services
+
+container = ApplicationContainer()
+container.init_resources()
+container.wire(modules=[__name__])
+
+time_service = container.time_service()
+module_loader = container.module_loader_service()
+mongodb_service = container.mongodb_service()
+rabbitmq_service = container.rabbitmq_service()
+
+api_config = container.api_config()
+
+module_loader.load_all()
+
+print(time_service.convert(datetime.datetime.now()))
+print("Loaded " + str(len(module_loader.loaded_modules)) + " modules")
+
+# endregion services
+
+# region types
+
+@dataclasses.dataclass
+class HealthCheckResponse:
+    status: str
+    server_time: str
+
+# endregion types
+
+# region status
+
+@app.get('/')
+def health_check() -> HealthCheckResponse:
+    return HealthCheckResponse(
+        status='[OK]',
+        server_time=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    )
+
+# endregion status
+
+# region scenario
+
+@app.get('/scenario')
+async def get_scenarios():
+    found = await mongodb_service.get_scenario_documents()
+
+    return [f.to_base_model().to_form() for f in found]
+
+@app.get('/scenario/{uuid_scenario}')
+async def get_scenario(
+        uuid_scenario: str
+):
+    found = await mongodb_service.get_scenario_document(uuid_scenario)
+
+    if not found:
+        raise HTTPException(status_code=404, detail="Scenario not found")
+    return found.to_base_model().to_form()
+
+@app.post('/scenario')
+async def post_scenario(
+        scenario_form: BasePlannerSolverForm,
+) -> BasePlannerSolverForm[Scenario]:
+    """
+    creates the scenario
+    """
+    scenario = cast(BasePlannerSolverForm[Scenario], scenario_form)
+
+    base_model = scenario.to_base_model()
+
+    await mongodb_service.store_scenario_document(base_model)
+
+    return base_model.to_form()
+
+@app.delete('/scenario/{uuid_scenario}')
+async def delete_scenario(
+        uuid_scenario: str
+):
+    deleted = await mongodb_service.delete_scenario_document(uuid_scenario)
+
+    return deleted.to_base_model().to_form()
+
+# endregion scenario
+
+# region resource
+
+@app.get('/scenario/{uuid_scenario}/resource')
+async def get_scenario_resources(
+        uuid_scenario: str
+) -> List[BasePlannerSolverForm[Resource]]:
+    found = await mongodb_service.get_resource_documents(uuid_scenario=uuid_scenario)
+
+    return [f.to_base_model().to_form() for f in found]
+
+@app.get('/scenario/{uuid_scenario}/resource/{uuid}')
+async def get_scenario_resource(
+        uuid_scenario: str,
+        uuid: str
+) -> BasePlannerSolverForm[Resource]:
+    found = await mongodb_service.get_resource_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid
+    )
+
+    if not found:
+        raise HTTPException(status_code=404, detail='scenario resource not found')
+
+    return found.to_base_model().to_form()
+
+@app.post('/scenario/{uuid_scenario}/resource')
+async def post_scenario_resource(
+        uuid_scenario: str,
+        resource_form: BasePlannerSolverForm,
+) -> BasePlannerSolverForm[Resource]:
+    scenario_document = await mongodb_service.get_scenario_document(uuid_scenario)
+
+    if not scenario_document:
+        raise HTTPException(status_code=404, detail='scenario not found')
+
+    resource = cast(BasePlannerSolverForm[Resource], resource_form)
+
+    base_model = resource.to_base_model()
+
+    # Hydrate parameter links before storing
+    base_model = await mongodb_service.hydrate_parameter_links(base_model, uuid_scenario)
+
+    await mongodb_service.store_resource_document(
+        uuid_scenario=uuid_scenario,
+        resource=base_model
+    )
+
+    return base_model.to_form()
+
+@app.delete('/scenario/{uuid_scenario}/resource/{uuid}')
+async def delete_scenario_resource(
+        uuid_scenario: str,
+        uuid: str
+) -> BasePlannerSolverForm[Resource]:
+    scenario_document = await mongodb_service.get_scenario_document(uuid_scenario)
+
+    if not scenario_document:
+        raise HTTPException(status_code=404, detail='scenario not found')
+
+    found = await mongodb_service.get_resource_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid
+    )
+
+    if not found:
+        raise HTTPException(status_code=404, detail='resource not found')
+
+    await mongodb_service.delete_resource_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid
+    )
+
+    return found.to_base_model().to_form()
+
+
+# endregion resource
+
+# region task
+
+@app.get('/scenario/{uuid_scenario}/task')
+async def get_scenario_tasks(
+        uuid_scenario: str
+) -> List[BasePlannerSolverForm[Task]]:
+    found = await mongodb_service.get_task_documents(uuid_scenario=uuid_scenario)
+
+    return [f.to_base_model().to_form() for f in found]
+
+@app.get('/scenario/{uuid_scenario}/task/{uuid}')
+async def get_scenario_task(
+        uuid_scenario: str,
+        uuid: str
+) -> BasePlannerSolverForm[Task]:
+    found = await mongodb_service.get_task_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid,
+    )
+
+    if not found:
+        raise HTTPException(status_code=404, detail='scenario task not found')
+
+    return found.to_base_model().to_form()
+
+@app.post('/scenario/{uuid_scenario}/task')
+async def post_scenario_task(
+        uuid_scenario: str,
+        task_form: BasePlannerSolverForm,
+) -> BasePlannerSolverForm[Task]:
+    scenario_document = await mongodb_service.get_scenario_document(
+        uuid=uuid_scenario
+    )
+
+    if not scenario_document:
+        raise HTTPException(status_code=404, detail='scenario not found')
+
+    task = cast(BasePlannerSolverForm[Task], task_form)
+
+    base_model = task.to_base_model()
+
+    # Hydrate parameter links before storing
+    base_model = await mongodb_service.hydrate_parameter_links(base_model, uuid_scenario)
+
+    await mongodb_service.store_task_document(
+        uuid_scenario=uuid_scenario,
+        task=base_model,
+    )
+
+    return base_model.to_form()
+
+@app.delete('/scenario/{uuid_scenario}/task/{uuid}')
+async def delete_scenario_task(
+        uuid_scenario: str,
+        uuid: str
+) -> BasePlannerSolverForm[Task]:
+    scenario_document = await mongodb_service.get_scenario_document(uuid_scenario)
+
+    if not scenario_document:
+        raise HTTPException(status_code=404, detail='scenario not found')
+
+    found = await mongodb_service.get_task_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid
+    )
+
+    if not found:
+        raise HTTPException(status_code=404, detail='task not found')
+
+    await mongodb_service.delete_task_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid
+    )
+
+    return found.to_base_model().to_form()
+
+# endregion task
+
+# region constraint
+
+@app.get('/scenario/{uuid_scenario}/constraint')
+async def get_scenario_constraints(
+        uuid_scenario: str
+) -> List[BasePlannerSolverForm[Constraint]]:
+    found = await mongodb_service.get_constraint_documents(
+        uuid_scenario=uuid_scenario,
+    )
+
+    return [f.to_base_model().to_form() for f in found]
+
+@app.get('/scenario/{uuid_scenario}/constraint/{uuid}')
+async def get_scenario_constraint(
+        uuid_scenario: str,
+        uuid: str,
+) -> BasePlannerSolverForm[Constraint]:
+    found = await mongodb_service.get_constraint_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid,
+    )
+
+    if not found:
+        raise HTTPException(status_code=404, detail='scenario constraint not found')
+
+    return found.to_base_model().to_form()
+
+@app.post('/scenario/{uuid_scenario}/constraint')
+async def post_scenario_constraint(
+        uuid_scenario: str,
+        constraint_form: BasePlannerSolverForm,
+) -> BasePlannerSolverForm[Constraint]:
+    scenario_document = await mongodb_service.get_scenario_document(uuid=uuid_scenario)
+
+    if not scenario_document:
+        raise HTTPException(status_code=400, detail='scenario not found')
+
+    constraint = cast(BasePlannerSolverForm[Constraint], constraint_form)
+
+    base_model = constraint.to_base_model()
+
+    # Hydrate parameter links before storing
+    base_model = await mongodb_service.hydrate_parameter_links(base_model, uuid_scenario)
+
+    await mongodb_service.store_constraint_document(
+        uuid_scenario=uuid_scenario,
+        constraint=base_model
+    )
+
+    return base_model.to_form()
+
+@app.delete('/scenario/{uuid_scenario}/constraint/{uuid}')
+async def delete_scenario_constraint(
+        uuid_scenario: str,
+        uuid: str
+) -> BasePlannerSolverForm[Constraint]:
+    found = await mongodb_service.get_constraint_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid,
+    )
+
+    if not found:
+        raise HTTPException(status_code=404, detail='constraint not found')
+
+    await mongodb_service.delete_constraint_document(
+        uuid_scenario=uuid_scenario,
+        uuid=uuid,
+    )
+
+    return found.to_base_model().to_form()
+
+# endregion constraint
+
+# region execution
+
+@app.post('/scenario/{uuid_scenario}/execution')
+async def launch_scenario(
+        uuid_scenario: str,
+) -> ExecutionDocument:
+    """Launches the execution of a scenario"""
+
+    # retrieve the scenario
+    scenario = await mongodb_service.get_scenario_document(uuid = uuid_scenario)
+
+    if not scenario:
+        raise HTTPException(404, 'Scenario not found')
+
+    # first I create the execution tracking document
+    execution_document = await mongodb_service.store_scenario_execution_document(
+        uuid_scenario=uuid_scenario,
+        document=ExecutionDocument(
+            type="async_execution"
+        )
+    )
+
+    # then I send the signal to the workers
+    rabbitmq_service.publish_execution_trigger(data={
+        "uuid_scenario": uuid_scenario,
+        "uuid_execution": execution_document.uuid
+    })
+
+    return execution_document
+
+
+# endregion execution

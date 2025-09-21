@@ -1,5 +1,6 @@
 from abc import ABC
-from typing import Type, get_origin, Union, get_args
+from typing import Type, get_origin, Union, get_args, Optional, Literal
+
 
 class Parameter(ABC):
     """
@@ -9,12 +10,14 @@ class Parameter(ABC):
     def __init__(
             self,
             param_type: Type,
+            link: Optional[Literal['task', 'resource', 'constraint']] = None,
             extra_name: str | None = None
     ):
         self.param_type = param_type
         self.name = None
         self.extra_name = extra_name
         self.private_name = None
+        self.link = link
 
     def __set_name__(self, owner, name):
         """
@@ -24,6 +27,8 @@ class Parameter(ABC):
         if self.extra_name is None:
             self.extra_name = name
         self.private_name = f"_{name}"
+        if self.link is not None:
+            setattr(owner, f"_ps_link_{name}", self.link)
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -33,6 +38,26 @@ class Parameter(ABC):
     def __set__(self, instance, value):
 
         setattr(instance, self.private_name, value)
+
+    def resolve_value(self, instance):
+        """
+        Resolves the parameter value. If it's a string UUID, it should be hydrated.
+        If it's already an object, return it directly.
+        This method is used by constraints and other components to get the resolved value.
+        """
+        value = getattr(instance, self.private_name, None)
+
+        if value is None:
+            return None
+
+        # If it's already an object (hydrated), return it
+        if not isinstance(value, str):
+            return value
+
+        # If it's a string UUID, it should have been hydrated by mongodb_service.hydrate_parameter_links()
+        # If we reach here with a string, it means hydration wasn't called
+        raise ValueError(f"Parameter '{self.name}' contains unresolved UUID '{value}'. "
+                        f"Call mongodb_service.hydrate_parameter_links() first.")
 
     # region type validation
 

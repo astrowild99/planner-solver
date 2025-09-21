@@ -14,7 +14,7 @@ class SolverType:
         setattr(cls, '__ps_type_name', self.type_name)
         setattr(cls, '__ps_type_type', 'solver')
 
-        types_service.register_solver_type(cls)
+        types_service.register_solver_type(cls, self.type_name)
 
         return cls
 

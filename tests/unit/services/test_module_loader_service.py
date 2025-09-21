@@ -4,6 +4,7 @@ import pytest
 import pathlib
 
 from planner_solver.config.models import ModuleConfig
+from planner_solver.containers.singletons import types_service
 from planner_solver.services.module_loader_service import ModuleLoaderService
 
 @pytest.fixture
@@ -26,3 +27,4 @@ def test_load_base_module(mock_module_config):
     loader_service.load_all()
 
     assert len(loader_service.loaded_modules) >= 3
+    assert types_service.count() >= 3

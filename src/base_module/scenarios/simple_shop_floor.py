@@ -1,8 +1,9 @@
 from typing import List
 
+from planner_solver.decorators.scenario_type import ScenarioType
 from planner_solver.models.base_models import Scenario, Task, Constraint, Resource
 
-
+@ScenarioType(type_name="simple_shop_floor")
 class SimpleShopFloorScenario(Scenario):
     """
     In this simple scenario, only tasks, constraints and resources are set
@@ -11,8 +12,8 @@ class SimpleShopFloorScenario(Scenario):
     __constraints: List[Constraint]
     __resources: List[Resource]
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.__tasks = []
         self.__constraints = []
         self.__resources = []
