@@ -12,6 +12,7 @@ from pydantic import Field
 
 from planner_solver.containers.singletons import types_service
 from planner_solver.exceptions.type_exceptions import TypeException
+from planner_solver.models.enums import WorkerTaskOutputStatus
 
 if TYPE_CHECKING:
     from planner_solver.models.base_models import Scenario, Resource, Constraint, Task, PlannerSolverBaseModel
@@ -193,5 +194,24 @@ class ScenarioDocument(BasePlannerSolverDocument):
             [
                 ("uuid", pymongo.TEXT),
                 ("label", pymongo.TEXT)
+            ]
+        ]
+
+class ExecutionDocument(BasePlannerSolverDocument):
+    """
+    keeps track of the execution of a planning scenario
+    """
+    scenario: Link[ScenarioDocument] | None = None
+
+    status: WorkerTaskOutputStatus = WorkerTaskOutputStatus.UNKNOWN
+
+    def to_base_model(self) -> PlannerSolverBaseModel:
+        raise Exception("There is no base model linked to an execution")
+
+    class Settings:
+        name = "ps_executions"
+        indexes = [
+            [
+                ("uuid", pymongo.TEXT)
             ]
         ]

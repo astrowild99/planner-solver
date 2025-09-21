@@ -14,6 +14,7 @@ from fastapi import FastAPI, HTTPException
 from planner_solver.containers import ApplicationContainer
 from planner_solver.models.base_models import Scenario, Resource, Task, Constraint
 from planner_solver.models.forms import BasePlannerSolverForm
+from planner_solver.models.stored_documents import ExecutionDocument
 
 logger = logging.getLogger(__name__)
 
@@ -332,3 +333,35 @@ async def delete_scenario_constraint(
     return found.to_base_model().to_form()
 
 # endregion constraint
+
+# region execution
+
+@app.post('/scenario/{uuid_scenario}/execution')
+async def launch_scenario(
+        uuid_scenario: str,
+) -> ExecutionDocument:
+    """Launches the execution of a scenario"""
+
+    # retrieve the scenario
+    scenario = await mongodb_service.get_scenario_document(uuid = uuid_scenario)
+
+    if not scenario:
+        raise HTTPException(404, 'Scenario not found')
+
+    # first I create the execution tracking document
+    execution_document = await mongodb_service.store_scenario_execution_document(
+        uuid_scenario=uuid_scenario,
+        document=ExecutionDocument(
+            type="async_execution"
+        )
+    )
+
+    # then I send the signal to the workers
+    rabbitmq_service.publish_execution_trigger(data={
+        "scenario": scenario.to_base_model().model_dump()
+    })
+
+    return execution_document
+
+
+# endregion execution

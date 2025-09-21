@@ -1,9 +1,12 @@
-from typing import List, Optional
+from __future__ import annotations
+
+from typing import List, Optional, TYPE_CHECKING
 import uuid
 
 from planner_solver.decorators.task_type import TaskType, TaskParameter
 from planner_solver.models.base_models import Task, Resource, Constraint, TaskStatus, CpSatTask
-from planner_solver.services.worker_service import WrappedModel
+if TYPE_CHECKING:
+    from planner_solver.services.worker_service import WrappedModel
 
 
 @TaskType(type_name="fixed_duration_task")
@@ -44,7 +47,7 @@ class FixedDurationTask(Task):
     def add_resource(self, resource: Resource) -> None:
         self.__resources.append(resource)
 
-    def generate_cp_sat(self, wrapped_model: WrappedModel, horizon: int) -> CpSatTask:
+    def generate_cp_sat(self, wrapped_model: "WrappedModel", horizon: int) -> CpSatTask:
         wrapped_model.variables[f"{self.get_unique_id()}_start"] = (
             wrapped_model.model.new_int_var(0, horizon, f"{self.get_unique_id()}_start"))
         wrapped_model.variables[f"{self.get_unique_id()}_end"] = (

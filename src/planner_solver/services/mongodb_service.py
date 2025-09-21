@@ -8,7 +8,8 @@ from pymongo import AsyncMongoClient
 
 from planner_solver.config.models import MongodbConfig
 from planner_solver.models.base_models import Scenario, Resource, Task, Constraint
-from planner_solver.models.stored_documents import TaskDocument, ConstraintDocument, ResourceDocument, ScenarioDocument
+from planner_solver.models.stored_documents import TaskDocument, ConstraintDocument, ResourceDocument, ScenarioDocument, \
+    ExecutionDocument
 from planner_solver.services.types_service import TypesService
 
 logger = logging.getLogger(__name__)
@@ -403,3 +404,54 @@ class MongodbService:
         return found
 
     # endregion scenario
+
+    # region execution
+
+    async def get_scenario_execution_document(
+            self,
+            uuid_scenario: str,
+            uuid: str
+    ) -> ExecutionDocument:
+        await self.__connect()
+
+        found = await ExecutionDocument.find(
+            ExecutionDocument.scenario.uuid == uuid_scenario,
+            ExecutionDocument.uuid == uuid,
+            fetch_links=True
+        ).first_or_none()
+
+        return found
+
+    async def store_scenario_execution_document(
+            self,
+            uuid_scenario: str,
+            document: ExecutionDocument,
+            uuid: Optional[str] = None
+    ) -> ExecutionDocument:
+        await self.__connect()
+
+        scenario = await self.get_scenario_document(uuid=uuid_scenario)
+
+        if uuid is not None:
+            raise Exception("Update not yet implemented")
+        else:
+            document.scenario = scenario
+
+            stored_document = await document.insert()
+
+        return stored_document
+
+    async def delete_scenario_execution_document(
+            self,
+            uuid_scenario: str,
+            uuid: str,
+    ) -> None:
+        await self.__connect()
+
+        await ExecutionDocument.find(
+            ExecutionDocument.uuid == uuid,
+            ExecutionDocument.scenario.uuid == uuid_scenario,
+            fetch_links=True
+        ).delete()
+
+    # endregion execution

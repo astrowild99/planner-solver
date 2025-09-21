@@ -280,6 +280,13 @@ async def test_constraint_linked_to_tasks_creation(
 
     # todo handle the creation of constraints within tasks if needed
 
+    # and at this point I can trigger an execution of the planning
+    response = client.post(f"/scenario/{uuid_scenario}/execution")
+    assert response.status_code == 200
+    content = response.json()
+    assert type(content['uuid']) is str
+    assert content['status'] == 0
+
     # todo handle data sanitation by uncommenting here
     # then I try to delete one of the tasks, and I should be prevented as there are constraints
     # linked to it
