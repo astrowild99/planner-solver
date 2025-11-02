@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "planner-solver.fullname" . }}-rabbitmq
+  labels:
+    {{- include "planner-solver.rabbitmq.labels" . | nindent 4 }}
+spec:
+  ports:
+    - name: management
+      port: 15672
+      targetPort: 15672
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+  selector:
+    {{- include "planner-solver.rabbitmq.selectorLabels" . | nindent 4 }}

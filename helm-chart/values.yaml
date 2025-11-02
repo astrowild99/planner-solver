@@ -1,0 +1,45 @@
+# Default values for planner-solver Helm chart
+
+# MongoDB configuration
+mongodb:
+  enabled: true
+  image: mongo
+  tag: noble
+  replicas: 3
+  replicaSetName: rs0
+  rootUsername: root
+  rootPassword: planner_solver
+  database: planner_solver
+  storage: 1Gi
+  port: 27017
+
+# RabbitMQ configuration
+rabbitmq:
+  enabled: true
+  image: rabbitmq
+  tag: management-alpine
+  replicas: 1
+  username: root
+  password: planner_solver
+  storage: 1Gi
+  managementPort: 15672
+  amqpPort: 5672
+
+# Planner Solver API configuration
+plannerSolver:
+  enabled: true
+  image: registry.portfoli.it/planner-solver/planner-solver
+  tag: latest
+  replicas: 1
+  port: 8080
+
+# Planner Solver Runner (workers) configuration
+plannerSolverRunner:
+  enabled: true
+  replicas: 3
+  image: registry.portfoli.it/planner-solver/planner-solver
+  tag: latest
+
+# Global settings
+global:
+  storageClass: ""

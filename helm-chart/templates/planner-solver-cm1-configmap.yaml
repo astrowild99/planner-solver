@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  .gitignore: |-
+    # modules will not be pushed directly in the main repository
+    *
+kind: ConfigMap
+metadata:
+  name: {{ include "planner-solver.fullname" . }}-modules
+  labels:
+    {{- include "planner-solver.api.labels" . | nindent 4 }}

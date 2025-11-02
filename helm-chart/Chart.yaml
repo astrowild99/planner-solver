@@ -1,0 +1,8 @@
+name: planner-solver
+description: A Helm Chart for planner-solver application with MongoDB, RabbitMQ, and workers
+version: 0.1.0
+apiVersion: v2
+keywords:
+  - planner-solver
+  - mongodb
+  - rabbitmq

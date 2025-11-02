@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "planner-solver.fullname" . }}-mongodb
+  labels:
+    {{- include "planner-solver.mongodb.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "planner-solver.fullname" . }}-mongodb
+  replicas: {{ .Values.mongodb.replicas }}
+  selector:
+    matchLabels:
+      {{- include "planner-solver.mongodb.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "planner-solver.mongodb.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - args:
+            - mongod
+            - --quiet
+            - --logpath
+            - /dev/null
+            - --replSet
+            - {{ .Values.mongodb.replicaSetName }}
+          env:
+            - name: MONGO_INITDB_DATABASE
+              value: {{ .Values.mongodb.database }}
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: {{ .Values.mongodb.rootPassword }}
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: {{ .Values.mongodb.rootUsername }}
+          image: {{ .Values.mongodb.image }}:{{ .Values.mongodb.tag }}
+          livenessProbe:
+            exec:
+              command:
+                - bash
+                - -c
+                - echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - bash
+                - -c
+                - echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          name: mongo-db
+          ports:
+            - containerPort: 27017
+              protocol: TCP
+              name: mongodb
+          volumeMounts:
+            - mountPath: /data/db
+              name: mongo-db-data
+      restartPolicy: Always
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-db-data
+        labels:
+          {{- include "planner-solver.mongodb.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.mongodb.storage }}

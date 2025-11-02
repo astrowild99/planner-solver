@@ -14,3 +14,12 @@ pip install -r requirements.txt
 Then start the docker by:
 - copying .env.example to .env
 - running the build in dev mode `docker compose up --build --watch`
+
+## Install
+
+The software can be installed using the helm chart:
+
+```bash
+cd helm-chart
+helm install -f values.yaml --create-namespace --namespace planner-solver planner-solver .
+```

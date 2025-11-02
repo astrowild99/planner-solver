@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "planner-solver.fullname" . }}-mongodb
+  labels:
+    {{- include "planner-solver.mongodb.labels" . | nindent 4 }}
+spec:
+  clusterIP: None  # Headless service for StatefulSet
+  ports:
+    - name: mongodb
+      port: 27017
+      targetPort: 27017
+  selector:
+    {{- include "planner-solver.mongodb.selectorLabels" . | nindent 4 }}

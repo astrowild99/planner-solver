@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "planner-solver.fullname" . }}-api
+  labels:
+    {{- include "planner-solver.api.labels" . | nindent 4 }}
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    {{- include "planner-solver.api.selectorLabels" . | nindent 4 }}

@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "planner-solver.fullname" . }}-rabbitmq
+  labels:
+    {{- include "planner-solver.rabbitmq.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.rabbitmq.replicas }}
+  selector:
+    matchLabels:
+      {{- include "planner-solver.rabbitmq.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        {{- include "planner-solver.rabbitmq.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - env:
+            - name: RABBITMQ_DEFAULT_PASS
+              value: {{ .Values.rabbitmq.password }}
+            - name: RABBITMQ_DEFAULT_USER
+              value: {{ .Values.rabbitmq.username }}
+          image: {{ .Values.rabbitmq.image }}:{{ .Values.rabbitmq.tag }}
+          livenessProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics
+                - check_running
+            initialDelaySeconds: 10
+          name: rabbitmq
+          ports:
+            - containerPort: 15672
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /var/lib/rabbitmq
+              name: rabbitmq-data
+      restartPolicy: Always
+      volumes:
+        - name: rabbitmq-data
+          persistentVolumeClaim:
+            claimName: {{ include "planner-solver.fullname" . }}-rabbitmq-data

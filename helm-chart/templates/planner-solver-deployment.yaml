@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "planner-solver.fullname" . }}-api
+  labels:
+    {{- include "planner-solver.api.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.plannerSolver.replicas }}
+  selector:
+    matchLabels:
+      {{- include "planner-solver.api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "planner-solver.api.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - image: {{ .Values.plannerSolver.image }}:{{ .Values.plannerSolver.tag }}
+          name: planner-solver
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+              name: http
+          volumeMounts:
+            - mountPath: /usr/src/app/configs
+              name: configs
+            - mountPath: /usr/src/app/modules
+              name: modules
+      restartPolicy: Always
+      volumes:
+        - configMap:
+            name: {{ include "planner-solver.fullname" . }}-configs
+          name: configs
+        - configMap:
+            name: {{ include "planner-solver.fullname" . }}-modules
+          name: modules
