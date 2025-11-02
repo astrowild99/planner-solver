@@ -47,11 +47,23 @@ class FixedDurationTask(Task):
     def add_resource(self, resource: Resource) -> None:
         self.__resources.append(resource)
 
-    def generate_cp_sat(self, wrapped_model: "WrappedModel", horizon: int) -> CpSatTask:
+    def generate_cp_sat(
+            self,
+            wrapped_model: "WrappedModel",
+            horizon: int
+    ) -> CpSatTask:
         wrapped_model.variables[f"{self.get_unique_id()}_start"] = (
-            wrapped_model.model.new_int_var(0, horizon, f"{self.get_unique_id()}_start"))
+            wrapped_model.model.new_int_var(
+                0,
+                horizon,
+                f"{self.get_unique_id()}_start")
+        )
         wrapped_model.variables[f"{self.get_unique_id()}_end"] = (
-            wrapped_model.model.new_int_var(0, horizon, f"{self.get_unique_id()}_end"))
+            wrapped_model.model.new_int_var(
+                0,
+                horizon,
+                f"{self.get_unique_id()}_end")
+        )
         wrapped_model.variables[f"{self.get_unique_id()}_interval"] = (
             wrapped_model.model.new_interval_var(
                 wrapped_model.variables[f"{self.get_unique_id()}_start"],

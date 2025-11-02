@@ -62,6 +62,9 @@ async def test_simple_worker(
 
     task_a.add_constraint(after_constraint)
 
+    task_a.add_resource(machinery_resource)
+    task_b.add_resource(machinery_resource)
+
     # with a fixed constraint of number of operators
     scenario = SimpleShopFloorScenario()
     scenario.add_resource(machinery_resource)
